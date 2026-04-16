@@ -2,70 +2,58 @@ import type { PromptTaskType } from "@prisma/client";
 import { prisma } from "@/src/infrastructure/orm/prisma";
 
 export class PromptTemplateRepository {
-  async getLatestActive(taskType: PromptTaskType) {
+  async getLatestActive(taskType: PromptTaskType, userId: string) {
     return prisma.promptTemplate.findFirst({
-      where: {
-        taskType,
-        isActive: true,
-      },
-      orderBy: {
-        version: "desc",
-      },
+      where: { taskType, isActive: true, userId },
+      orderBy: { version: "desc" },
     });
   }
 
-  async getActiveById(taskType: PromptTaskType, id: string) {
+  async getActiveById(taskType: PromptTaskType, id: string, userId: string) {
     return prisma.promptTemplate.findFirst({
-      where: {
-        id,
-        taskType,
-        isActive: true,
-      },
+      where: { id, taskType, isActive: true, userId },
     });
   }
 
-  async listActive(taskType: PromptTaskType) {
+  async listActive(taskType: PromptTaskType, userId: string) {
     return prisma.promptTemplate.findMany({
-      where: {
-        taskType,
-        isActive: true,
-      },
+      where: { taskType, isActive: true, userId },
       orderBy: [{ name: "asc" }, { version: "desc" }],
-      select: {
-        id: true,
-        name: true,
-        version: true,
-      },
+      select: { id: true, name: true, version: true },
     });
   }
 
-  async listAll() {
+  async listAll(userId: string) {
     return prisma.promptTemplate.findMany({
+      where: { userId },
       orderBy: [{ taskType: "asc" }, { name: "asc" }, { version: "desc" }],
     });
   }
 
-  async update(id: string, input: { name?: string; content?: string }) {
-    return prisma.promptTemplate.update({
-      where: { id },
+  async update(id: string, userId: string, input: { name?: string; content?: string }) {
+    const { count } = await prisma.promptTemplate.updateMany({
+      where: { id, userId },
       data: {
         ...(input.name !== undefined ? { name: input.name } : {}),
         ...(input.content !== undefined ? { content: input.content } : {}),
       },
     });
+    if (count === 0) throw new Error("Prompt template not found.");
+    return prisma.promptTemplate.findUniqueOrThrow({ where: { id } });
   }
 
-  async findById(id: string) {
-    return prisma.promptTemplate.findUnique({
-      where: { id },
+  async findById(id: string, userId: string) {
+    return prisma.promptTemplate.findFirst({
+      where: { id, userId },
     });
   }
 
-  async countAll() {
-    return prisma.promptTemplate.count();
+  async countAll(userId: string) {
+    return prisma.promptTemplate.count({ where: { userId } });
   }
 
   async create(input: {
+    userId: string;
     name: string;
     taskType: PromptTaskType;
     version: number;
@@ -74,6 +62,7 @@ export class PromptTemplateRepository {
   }) {
     return prisma.promptTemplate.create({
       data: {
+        userId: input.userId,
         name: input.name,
         taskType: input.taskType,
         version: input.version,
@@ -83,29 +72,19 @@ export class PromptTemplateRepository {
     });
   }
 
-  async deleteById(id: string) {
-    return prisma.promptTemplate.delete({
-      where: { id },
-    });
+  async deleteById(id: string, userId: string) {
+    const { count } = await prisma.promptTemplate.deleteMany({ where: { id, userId } });
+    if (count === 0) throw new Error("Prompt template not found.");
   }
 
-  async getLatestByNameAndTask(name: string, taskType: PromptTaskType) {
+  async getLatestByNameAndTask(name: string, taskType: PromptTaskType, userId: string) {
     return prisma.promptTemplate.findFirst({
-      where: {
-        name,
-        taskType,
-      },
-      orderBy: {
-        version: "desc",
-      },
+      where: { name, taskType, userId },
+      orderBy: { version: "desc" },
     });
   }
 
   async countAIRequests(id: string) {
-    return prisma.aIRequest.count({
-      where: {
-        promptTemplateId: id,
-      },
-    });
+    return prisma.aIRequest.count({ where: { promptTemplateId: id } });
   }
 }

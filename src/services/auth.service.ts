@@ -4,6 +4,7 @@ import type { UserRole } from "@prisma/client";
 import { env } from "@/src/lib/env";
 import { UserRepository } from "@/src/repositories/user.repository";
 import { RefreshTokenRepository } from "@/src/repositories/refresh-token.repository";
+import { DEFAULT_TEMPLATE_CONTENT } from "@/src/services/prompt-template.service";
 import {
   signAccessToken,
   signRefreshToken,
@@ -30,7 +31,7 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(password, 12);
     let user;
     try {
-      user = await this.users.createWithAutoRole(email, passwordHash);
+      user = await this.users.createWithAutoRole(email, passwordHash, DEFAULT_TEMPLATE_CONTENT);
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&

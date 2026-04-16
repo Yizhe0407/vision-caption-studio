@@ -38,7 +38,7 @@ Build an image-caption platform that supports login, batch upload, async generat
 - `tags` + `image_tags`: many-to-many tagging.
 - `ai_requests`: provider/model/tokens/cost/error.
 - `jobs`: queue lifecycle tracking.
-- `prompt_templates`: versioned prompts.
+- `prompt_templates`: versioned prompts, **scoped per user** (`userId` FK). Each user manages their own independent set. A default template is created automatically on registration. All CRUD operations are restricted to the owning user.
 
 ## UX Rules
 - Keep style Notion-like: calm, minimal, readable.

@@ -18,7 +18,11 @@ const MESSAGE_MAP: Array<{ test: RegExp; message: string }> = [
   },
   { test: /model response is not valid json|unexpected token|json/i, message: "模型回傳格式錯誤，請調整 Prompt 格式或稍後重試。" },
   {
-    test: /\bunauthorized\b|forbidden|invalid refresh token|access token|refresh token|token expired|jwt/i,
+    test: /\bforbidden\b/i,
+    message: "您沒有權限執行此操作。",
+  },
+  {
+    test: /\bunauthorized\b|invalid refresh token|access token|refresh token|token expired|jwt/i,
     message: "登入已失效，請重新登入。",
   },
   { test: /database|connect/i, message: "系統目前忙碌中，請稍後再試。" },

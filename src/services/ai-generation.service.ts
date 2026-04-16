@@ -98,8 +98,8 @@ export class AIGenerationService {
     }
 
     const resolvedPromptTemplate = user.preferredPromptTemplateId
-      ? await this.prompts.getActiveById("CAPTION", user.preferredPromptTemplateId)
-      : await this.prompts.getLatestActive("CAPTION");
+      ? await this.prompts.getActiveById("CAPTION", user.preferredPromptTemplateId, input.userId)
+      : await this.prompts.getLatestActive("CAPTION", input.userId);
     if (!resolvedPromptTemplate) {
       await this.jobs.updateStatus(input.queueJobId, "FAILED", "Prompt template not found.");
       throw new Error("Prompt template not found.");

@@ -99,9 +99,10 @@ pnpm worker
 
 - 雲端模型 API Key 由前端 **API 設定頁** 管理（登入後 `/dashboard/settings/api`），並以 AES-GCM 加密後存入 MySQL。
 - Prompt Template 提供獨立頁面（`/dashboard/prompt-templates`）可直接前端編輯。
+- **Prompt Template 為每位使用者獨立管理**：每位使用者只能看到並編輯自己的模板，註冊時會自動建立一份預設模板。
 - 目前生成流程採單一 Prompt（同時產生 description + tags JSON），不再拆成 caption/tag 兩段 Prompt。
-- 可在 API 設定頁選擇「預設 Prompt Template」，後續生成會優先使用該模板。
-- Prompt Template 頁支援新增版本與刪除，且刪除時會強制保留至少一個模板。
+- 可在 API 設定頁選擇「預設 Prompt Template」，後續生成會優先使用該模板（限定為自己擁有的模板）。
+- Prompt Template 頁支援新增版本與刪除，且刪除時會強制保留至少一個模板（每位使用者各自計算）。
 - 生成頁不再手動選 provider，會直接使用 API 設定頁目前選定的 provider。
 - 系統第一位註冊者會自動成為 `ADMIN`，可在 `/dashboard/admin/users` 管理所有使用者角色。
 - Docker Compose 會同時啟動 `web + worker`；`worker` 會消化 BullMQ 佇列，避免任務卡在 `QUEUED`。
