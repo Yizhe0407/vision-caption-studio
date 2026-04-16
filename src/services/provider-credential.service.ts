@@ -24,6 +24,11 @@ export class ProviderCredentialService {
       preferredPromptTemplateId?: string;
     },
   ) {
+    const user = await this.users.findById(userId);
+    if (!user) {
+      throw new Error("User not found.");
+    }
+
     const incomingApiKey = payload.apiKey?.trim();
     const hasIncomingApiKey = Boolean(incomingApiKey && incomingApiKey.length > 0);
 
@@ -51,7 +56,7 @@ export class ProviderCredentialService {
       }
     }
 
-    await this.users.updatePreferences(userId, {
+    await this.users.updatePreferences(user.id, {
       preferredProvider: payload.preferredProvider,
       preferredModel: payload.preferredModel,
       preferredPromptTemplateId: payload.preferredPromptTemplateId,
