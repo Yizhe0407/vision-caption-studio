@@ -4,6 +4,9 @@ WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@10.29.1 --activate
 
+ARG DATABASE_URL="mysql://root:password@mysql:3306/vision_caption_studio"
+ENV DATABASE_URL=${DATABASE_URL}
+
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY prisma ./prisma
 COPY prisma.config.ts ./
