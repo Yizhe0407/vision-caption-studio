@@ -1,0 +1,97 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: mysql://root:password@mysql:3306/vision_caption_studio
+      REDIS_HOST: redis
+      MINIO_ENDPOINT: minio
+      MINIO_USE_SSL: "false"
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+    command: >
+      sh -c "until nc -z mysql 3306; do sleep 1; done;
+      pnpm prisma generate;
+      pnpm prisma db push;
+      pnpm db:seed;
+      pnpm exec next dev --hostname 0.0.0.0 --port 3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: mysql://root:password@mysql:3306/vision_caption_studio
+      REDIS_HOST: redis
+      MINIO_ENDPOINT: minio
+      MINIO_USE_SSL: "false"
+    command: >
+      sh -c "until nc -z mysql 3306; do sleep 1; done;
+      pnpm prisma generate;
+      pnpm prisma db push;
+      pnpm db:seed;
+      pnpm worker"
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: vision_caption_studio
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-ppassword"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    ports:
+      - "6379:6379"
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+volumes:
+  mysql_data:
+  minio_data:

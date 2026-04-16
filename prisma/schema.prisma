@@ -1,0 +1,185 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum AIProviderType {
+  OPENAI
+  OPENROUTER
+  GEMINI
+  CLAUDE
+}
+
+enum PromptTaskType {
+  CAPTION
+  TAG
+}
+
+enum AIRequestStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+}
+
+enum JobStatus {
+  QUEUED
+  PROCESSING
+  SUCCEEDED
+  FAILED
+}
+
+model User {
+  id                    String                  @id @default(cuid())
+  email                 String                  @unique
+  passwordHash          String
+  role                  UserRole                @default(USER)
+  preferredProvider     AIProviderType          @default(OPENAI)
+  preferredModel        String?
+  preferredPromptTemplateId String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  preferredPromptTemplate PromptTemplate?       @relation(fields: [preferredPromptTemplateId], references: [id], onDelete: SetNull)
+  refreshTokens         RefreshToken[]
+  images                Image[]
+  providerCredentials   UserProviderCredential[]
+  jobs                  Job[]
+  @@index([preferredPromptTemplateId])
+}
+
+model RefreshToken {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Image {
+  id                String      @id @default(cuid())
+  uploadedById      String
+  originalFilename  String
+  mimeType          String
+  fileSize          BigInt
+  width             Int?
+  height            Int?
+  md5               String
+  sha256            String
+  storageBucket     String
+  storageObjectKey  String      @unique
+  metadata          Json
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  uploadedBy        User        @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  captions          Caption[]
+  tags              ImageTag[]
+  jobs              Job[]
+}
+
+model PromptTemplate {
+  id         String         @id @default(cuid())
+  name       String
+  version    Int
+  taskType   PromptTaskType
+  content    String         @db.Text
+  isActive   Boolean        @default(true)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  aiRequests AIRequest[]
+  users      User[]
+
+  @@unique([name, version])
+  @@index([taskType, isActive, version(sort: Desc)])
+}
+
+model AIRequest {
+  id                String          @id @default(cuid())
+  provider          AIProviderType
+  model             String
+  status            AIRequestStatus @default(PENDING)
+  taskType          PromptTaskType
+  promptTemplateId  String
+  inputTokens       Int             @default(0)
+  outputTokens      Int             @default(0)
+  totalTokens       Int             @default(0)
+  estimatedCostUsd  Decimal         @db.Decimal(10, 6)
+  errorMessage      String?         @db.Text
+  startedAt         DateTime?
+  finishedAt        DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  promptTemplate    PromptTemplate  @relation(fields: [promptTemplateId], references: [id], onDelete: Restrict)
+  captions          Caption[]
+}
+
+model Caption {
+  id            String    @id @default(cuid())
+  imageId       String
+  aiRequestId   String
+  content       String    @db.Text
+  createdAt     DateTime  @default(now())
+  image         Image     @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  aiRequest     AIRequest @relation(fields: [aiRequestId], references: [id], onDelete: Restrict)
+}
+
+model Tag {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  images    ImageTag[]
+}
+
+model ImageTag {
+  imageId    String
+  tagId      String
+  createdAt  DateTime @default(now())
+  image      Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([imageId, tagId])
+}
+
+model Job {
+  id            String    @id @default(cuid())
+  userId        String?
+  imageId       String
+  queueJobId    String    @unique
+  status        JobStatus @default(QUEUED)
+  errorMessage  String?   @db.Text
+  attempts      Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  user          User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  image         Image     @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model UserProviderCredential {
+  id        String         @id @default(cuid())
+  userId    String
+  provider  AIProviderType
+  apiKey    String         @db.Text
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
+}
