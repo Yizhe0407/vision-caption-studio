@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { container } from "@/src/di/container";
-import { requireAdminUser } from "@/src/infrastructure/auth/request-auth";
+import { requireAuthUser } from "@/src/infrastructure/auth/request-auth";
 
 export const runtime = "nodejs";
 
@@ -10,7 +10,7 @@ type Params = {
 
 export async function PATCH(req: Request, { params }: Params) {
   try {
-    await requireAdminUser();
+    await requireAuthUser();
     const body = (await req.json()) as { name?: string; content?: string };
     const { id } = await params;
     const template = await container.promptTemplateController.update({
@@ -31,7 +31,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
 export async function DELETE(_req: Request, { params }: Params) {
   try {
-    await requireAdminUser();
+    await requireAuthUser();
     const { id } = await params;
     await container.promptTemplateController.remove({ id });
     return NextResponse.json({ ok: true });
