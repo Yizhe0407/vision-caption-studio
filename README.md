@@ -29,13 +29,31 @@
 cp .env.example .env
 ```
 
-2. 啟動服務（Next.js / MySQL / Redis / MinIO）：
+2. 啟動 **開發環境**（Next.js dev / MySQL / Redis / MinIO）：
 
 ```bash
-docker compose up -d --build
+pnpm docker:dev:up
 ```
 
-3. 生成 Prisma Client、執行 migration、seed prompt templates：
+3. 停止開發環境：
+
+```bash
+pnpm docker:dev:down
+```
+
+4. 啟動 **正式環境**（Next.js start / MySQL / Redis / MinIO）：
+
+```bash
+pnpm docker:prod:up
+```
+
+5. 停止正式環境：
+
+```bash
+pnpm docker:prod:down
+```
+
+6. 生成 Prisma Client、執行 migration、seed prompt templates（非 Docker 流程時使用）：
 
 ```bash
 pnpm prisma:generate
@@ -88,3 +106,4 @@ pnpm worker
 - 系統第一位註冊者會自動成為 `ADMIN`，可在 `/dashboard/admin/users` 管理所有使用者角色。
 - Docker Compose 會同時啟動 `web + worker`；`worker` 會消化 BullMQ 佇列，避免任務卡在 `QUEUED`。
 - `web` 與 `worker` 都已掛載專案目錄與 polling 設定，支援 dev 即時渲染。
+- `docker-compose.dev.yml` 專供開發；`docker-compose.prod.yml` 專供正式環境。

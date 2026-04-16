@@ -2,7 +2,7 @@ services:
   web:
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     depends_on:
       mysql:
         condition: service_healthy
@@ -13,29 +13,25 @@ services:
     env_file:
       - .env
     environment:
+      NODE_ENV: production
       DATABASE_URL: mysql://root:password@mysql:3306/vision_caption_studio
       REDIS_HOST: redis
       MINIO_ENDPOINT: minio
       MINIO_USE_SSL: "false"
-      WATCHPACK_POLLING: "true"
-      CHOKIDAR_USEPOLLING: "true"
     command: >
       sh -c "until nc -z mysql 3306; do sleep 1; done;
       pnpm prisma generate;
       pnpm prisma db push;
       pnpm db:seed;
-      pnpm exec next dev --hostname 0.0.0.0 --port 3000"
-    volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/.next
+      pnpm exec next start --hostname 0.0.0.0 --port 3000"
+    restart: unless-stopped
     ports:
       - "3000:3000"
 
   worker:
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     depends_on:
       mysql:
         condition: service_healthy
@@ -46,6 +42,7 @@ services:
     env_file:
       - .env
     environment:
+      NODE_ENV: production
       DATABASE_URL: mysql://root:password@mysql:3306/vision_caption_studio
       REDIS_HOST: redis
       MINIO_ENDPOINT: minio
@@ -56,15 +53,14 @@ services:
       pnpm prisma db push;
       pnpm db:seed;
       pnpm worker"
-    volumes:
-      - .:/app
-      - /app/node_modules
+    restart: unless-stopped
 
   mysql:
     image: mysql:8.4
     environment:
       MYSQL_ROOT_PASSWORD: password
       MYSQL_DATABASE: vision_caption_studio
+    restart: unless-stopped
     ports:
       - "3306:3306"
     volumes:
@@ -77,6 +73,7 @@ services:
 
   redis:
     image: redis:7.4-alpine
+    restart: unless-stopped
     ports:
       - "6379:6379"
 
@@ -86,6 +83,7 @@ services:
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
+    restart: unless-stopped
     ports:
       - "9000:9000"
       - "9001:9001"
