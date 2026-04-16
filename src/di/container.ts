@@ -35,7 +35,8 @@ class AppContainer {
   readonly providerCredentialRepository = new ProviderCredentialRepository();
   readonly aiProviderFactory = new AIProviderFactory();
 
-  readonly authService = new AuthService(this.userRepository, this.refreshTokenRepository);
+  readonly promptTemplateService = new PromptTemplateService(this.promptTemplateRepository);
+  readonly authService = new AuthService(this.userRepository, this.refreshTokenRepository, this.promptTemplateService);
   readonly adminUserService = new AdminUserService(this.userRepository);
   readonly imageService = new ImageService(this.imageRepository);
   readonly jobService = new JobService(this.jobRepository);
@@ -44,7 +45,6 @@ class AppContainer {
     this.userRepository,
     this.promptTemplateRepository,
   );
-  readonly promptTemplateService = new PromptTemplateService(this.promptTemplateRepository);
   readonly aiGenerationService = new AIGenerationService(
     this.aiProviderFactory,
     this.imageRepository,

@@ -58,8 +58,8 @@ export class ImageController {
       }
       const promptTemplate =
         (user.preferredPromptTemplateId &&
-          (await this.prompts.getActiveById("CAPTION", user.preferredPromptTemplateId))) ||
-        (await this.prompts.getLatestActive("CAPTION"));
+          (await this.prompts.getActiveById("CAPTION", user.preferredPromptTemplateId, parsed.userId))) ||
+        (await this.prompts.getLatestActive("CAPTION", parsed.userId));
       if (!promptTemplate) {
         throw new Error("Prompt template not found.");
       }

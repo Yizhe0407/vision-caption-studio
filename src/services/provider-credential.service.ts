@@ -33,7 +33,7 @@ export class ProviderCredentialService {
     const hasIncomingApiKey = Boolean(incomingApiKey && incomingApiKey.length > 0);
 
     if (payload.preferredPromptTemplateId) {
-      const prompt = await this.promptTemplates.getActiveById("CAPTION", payload.preferredPromptTemplateId);
+      const prompt = await this.promptTemplates.getActiveById("CAPTION", payload.preferredPromptTemplateId, userId);
       if (!prompt) {
         throw new Error("Prompt template not found.");
       }
@@ -70,7 +70,7 @@ export class ProviderCredentialService {
     }
 
     const rows = await this.credentials.listByUserId(userId);
-    const promptTemplates = await this.promptTemplates.listActive("CAPTION");
+    const promptTemplates = await this.promptTemplates.listActive("CAPTION", userId);
     const keys: Partial<Record<AIProviderType, string>> = {};
     await Promise.all(
       rows.map(async (row) => {

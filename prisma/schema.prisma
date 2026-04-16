@@ -53,7 +53,8 @@ model User {
   preferredPromptTemplateId String?
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
-  preferredPromptTemplate PromptTemplate?       @relation(fields: [preferredPromptTemplateId], references: [id], onDelete: SetNull)
+  preferredPromptTemplate PromptTemplate?       @relation("PreferredTemplate", fields: [preferredPromptTemplateId], references: [id], onDelete: SetNull)
+  ownedPromptTemplates  PromptTemplate[]        @relation("OwnedTemplates")
   refreshTokens         RefreshToken[]
   images                Image[]
   providerCredentials   UserProviderCredential[]
@@ -94,6 +95,7 @@ model Image {
 
 model PromptTemplate {
   id         String         @id @default(cuid())
+  userId     String
   name       String
   version    Int
   taskType   PromptTaskType
@@ -101,11 +103,12 @@ model PromptTemplate {
   isActive   Boolean        @default(true)
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
+  user       User           @relation("OwnedTemplates", fields: [userId], references: [id], onDelete: Cascade)
   aiRequests AIRequest[]
-  users      User[]
+  preferredBy User[]        @relation("PreferredTemplate")
 
-  @@unique([name, version])
-  @@index([taskType, isActive, version(sort: Desc)])
+  @@unique([userId, name, version])
+  @@index([userId, taskType, isActive, version(sort: Desc)])
 }
 
 model AIRequest {
