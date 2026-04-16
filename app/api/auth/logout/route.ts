@@ -1,10 +1,11 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { container } from "@/src/di/container";
+import { shouldUseSecureCookies } from "@/src/lib/auth-cookie";
 
 export const runtime = "nodejs";
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
     const cookieStore = await cookies();
     const refreshToken = cookieStore.get("refresh_token")?.value;
@@ -13,8 +14,21 @@ export async function POST() {
     }
 
     const response = NextResponse.json({ ok: true });
-    response.cookies.delete("access_token");
-    response.cookies.delete("refresh_token");
+    const secure = shouldUseSecureCookies(req);
+    response.cookies.set("access_token", "", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure,
+      maxAge: 0,
+      path: "/",
+    });
+    response.cookies.set("refresh_token", "", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure,
+      maxAge: 0,
+      path: "/",
+    });
     return response;
   } catch (error) {
     return NextResponse.json(
