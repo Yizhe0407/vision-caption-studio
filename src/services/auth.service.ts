@@ -4,7 +4,7 @@ import type { UserRole } from "@prisma/client";
 import { env } from "@/src/lib/env";
 import { UserRepository } from "@/src/repositories/user.repository";
 import { RefreshTokenRepository } from "@/src/repositories/refresh-token.repository";
-import { PromptTemplateService } from "@/src/services/prompt-template.service";
+import { DEFAULT_TEMPLATE_CONTENT } from "@/src/services/prompt-template.service";
 import {
   signAccessToken,
   signRefreshToken,
@@ -20,7 +20,6 @@ export class AuthService {
   constructor(
     private readonly users: UserRepository,
     private readonly refreshTokens: RefreshTokenRepository,
-    private readonly promptTemplates: PromptTemplateService,
   ) {}
 
   async register(email: string, password: string): Promise<AuthTokens> {
@@ -32,7 +31,7 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(password, 12);
     let user;
     try {
-      user = await this.users.createWithAutoRole(email, passwordHash);
+      user = await this.users.createWithAutoRole(email, passwordHash, DEFAULT_TEMPLATE_CONTENT);
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -42,8 +41,6 @@ export class AuthService {
       }
       throw error;
     }
-
-    await this.promptTemplates.createDefault(user.id);
 
     return this.issueTokens(user.id, user.email, user.role);
   }

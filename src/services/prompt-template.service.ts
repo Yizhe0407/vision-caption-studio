@@ -1,6 +1,6 @@
 import { PromptTemplateRepository } from "@/src/repositories/prompt-template.repository";
 
-const DEFAULT_TEMPLATE_CONTENT = `Analyze this product image and generate:
+export const DEFAULT_TEMPLATE_CONTENT = `Analyze this product image and generate:
 
 1. A detailed description (2-3 sentences) highlighting:
    - Product type and category
@@ -60,6 +60,10 @@ export class PromptTemplateService {
   }
 
   async remove(id: string, userId: string) {
+    const template = await this.templates.findById(id, userId);
+    if (!template) {
+      throw new Error("Prompt template not found.");
+    }
     const total = await this.templates.countAll(userId);
     if (total <= 1) {
       throw new Error("至少需要保留一個 Prompt Template。");

@@ -31,8 +31,10 @@ export class PromptTemplateRepository {
   }
 
   async update(id: string, userId: string, input: { name?: string; content?: string }) {
+    const existing = await prisma.promptTemplate.findFirst({ where: { id, userId } });
+    if (!existing) throw new Error("Prompt template not found.");
     return prisma.promptTemplate.update({
-      where: { id, userId },
+      where: { id },
       data: {
         ...(input.name !== undefined ? { name: input.name } : {}),
         ...(input.content !== undefined ? { content: input.content } : {}),
@@ -71,7 +73,9 @@ export class PromptTemplateRepository {
   }
 
   async deleteById(id: string, userId: string) {
-    return prisma.promptTemplate.delete({ where: { id, userId } });
+    const existing = await prisma.promptTemplate.findFirst({ where: { id, userId } });
+    if (!existing) throw new Error("Prompt template not found.");
+    return prisma.promptTemplate.delete({ where: { id } });
   }
 
   async getLatestByNameAndTask(name: string, taskType: PromptTaskType, userId: string) {

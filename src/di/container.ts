@@ -36,7 +36,7 @@ class AppContainer {
   readonly aiProviderFactory = new AIProviderFactory();
 
   readonly promptTemplateService = new PromptTemplateService(this.promptTemplateRepository);
-  readonly authService = new AuthService(this.userRepository, this.refreshTokenRepository, this.promptTemplateService);
+  readonly authService = new AuthService(this.userRepository, this.refreshTokenRepository);
   readonly adminUserService = new AdminUserService(this.userRepository);
   readonly imageService = new ImageService(this.imageRepository);
   readonly jobService = new JobService(this.jobRepository);
