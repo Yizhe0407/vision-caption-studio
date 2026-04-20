@@ -10,6 +10,7 @@ import { PromptTemplateRepository } from "@/src/repositories/prompt-template.rep
 import { TagRepository } from "@/src/repositories/tag.repository";
 import { UserRepository } from "@/src/repositories/user.repository";
 import { ProviderCredentialService } from "@/src/services/provider-credential.service";
+import { resolveAIError } from "@/src/lib/resolve-ai-error";
 
 function estimateCostUsd(provider: AIProviderType, inputTokens: number, outputTokens: number) {
   const pricing = {
@@ -17,6 +18,7 @@ function estimateCostUsd(provider: AIProviderType, inputTokens: number, outputTo
     OPENROUTER: [env.OPENROUTER_INPUT_USD_PER_1K, env.OPENROUTER_OUTPUT_USD_PER_1K],
     GEMINI: [env.GEMINI_INPUT_USD_PER_1K, env.GEMINI_OUTPUT_USD_PER_1K],
     CLAUDE: [env.CLAUDE_INPUT_USD_PER_1K, env.CLAUDE_OUTPUT_USD_PER_1K],
+    NVIDIA_NIM: [env.NVIDIA_NIM_INPUT_USD_PER_1K, env.NVIDIA_NIM_OUTPUT_USD_PER_1K],
   } as const;
 
   const [inputRate, outputRate] = pricing[provider];
@@ -31,32 +33,6 @@ async function streamToBuffer(stream: NodeJS.ReadableStream) {
   return Buffer.concat(chunks);
 }
 
-function resolveErrorMessage(error: unknown) {
-  if (!(error instanceof Error)) return "Unknown error";
-
-  const maybeRaw = (
-    error as Error & {
-      error?: {
-        metadata?: {
-          raw?: string;
-        };
-      };
-    }
-  ).error?.metadata?.raw;
-
-  if (typeof maybeRaw === "string" && maybeRaw.trim().length > 0) {
-    try {
-      const parsed = JSON.parse(maybeRaw) as { error?: { message?: string } };
-      if (parsed.error?.message && parsed.error.message.trim().length > 0) {
-        return parsed.error.message;
-      }
-    } catch {
-      // Keep original message
-    }
-  }
-
-  return error.message;
-}
 
 export class AIGenerationService {
   constructor(
@@ -106,16 +82,19 @@ export class AIGenerationService {
     }
 
     const provider = input.provider ?? user.preferredProvider ?? env.DEFAULT_AI_PROVIDER;
+    const providerModel = await this.credentials.getProviderModel(input.userId, provider);
     const model =
       input.model ??
-      user.preferredModel ??
+      providerModel ??
       (provider === "OPENROUTER"
         ? env.OPENROUTER_MODEL
         : provider === "GEMINI"
           ? env.GEMINI_MODEL
           : provider === "CLAUDE"
             ? env.ANTHROPIC_MODEL
-            : env.OPENAI_MODEL);
+            : provider === "NVIDIA_NIM"
+              ? env.NVIDIA_NIM_MODEL
+              : env.OPENAI_MODEL);
 
     const request = await this.requests.create({
       provider,
@@ -160,7 +139,7 @@ export class AIGenerationService {
 
       await this.jobs.updateStatus(input.queueJobId, "SUCCEEDED");
     } catch (error) {
-      const errorMessage = resolveErrorMessage(error);
+      const errorMessage = resolveAIError(error);
       await this.requests.complete({
         id: request.id,
         status: "FAILED",

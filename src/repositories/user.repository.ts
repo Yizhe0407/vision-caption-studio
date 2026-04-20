@@ -118,7 +118,6 @@ export class UserRepository {
     userId: string,
     input: {
       preferredProvider: AIProviderType;
-      preferredModel?: string;
       preferredPromptTemplateId?: string;
     },
   ) {
@@ -126,7 +125,6 @@ export class UserRepository {
       where: { id: userId },
       data: {
         preferredProvider: input.preferredProvider,
-        preferredModel: input.preferredModel?.trim() ? input.preferredModel.trim() : null,
         preferredPromptTemplateId: input.preferredPromptTemplateId ?? null,
       },
     });

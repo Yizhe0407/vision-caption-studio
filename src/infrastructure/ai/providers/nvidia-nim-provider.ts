@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import type { AIProvider, GenerateCaptionInput, GenerateCaptionResult } from "@/src/infrastructure/ai/types";
 import { parseGeneratedOutput } from "@/src/infrastructure/ai/providers/parse-generated-output";
 
-export class OpenRouterProvider implements AIProvider {
+export class NvidiaNimProvider implements AIProvider {
   constructor(private readonly client: OpenAI) {}
 
   async generateCaptionAndTags(input: GenerateCaptionInput): Promise<GenerateCaptionResult> {
@@ -31,7 +31,7 @@ export class OpenRouterProvider implements AIProvider {
 
     const content = completion.choices[0]?.message?.content;
     if (!content) {
-      throw new Error("OpenRouter returned empty content.");
+      throw new Error("NVIDIA NIM returned empty content.");
     }
 
     const parsed = parseGeneratedOutput(content);

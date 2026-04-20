@@ -35,6 +35,7 @@ function getFileKey(file: File) {
   return `${file.name}::${file.size}::${file.lastModified}::${file.type}`;
 }
 
+
 export default function GeneratePage() {
   const fileInputRef             = useRef<HTMLInputElement>(null);
   const [files, setFiles]        = useState<File[]>([]);
@@ -47,7 +48,7 @@ export default function GeneratePage() {
   const [uploading, setUploading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  const activeJob = useMemo(
+const activeJob = useMemo(
     () => jobs.find((j) => j.id === activeJobId) ?? null,
     [jobs, activeJobId],
   );
@@ -86,7 +87,7 @@ export default function GeneratePage() {
     }
   }, []);
 
-  const previewItems = useMemo(
+const previewItems = useMemo(
     () =>
       files.map((file) => ({
         key: getFileKey(file),
@@ -98,9 +99,7 @@ export default function GeneratePage() {
 
   useEffect(() => {
     return () => {
-      for (const item of previewItems) {
-        URL.revokeObjectURL(item.url);
-      }
+      for (const item of previewItems) URL.revokeObjectURL(item.url);
     };
   }, [previewItems]);
 
@@ -128,13 +127,12 @@ export default function GeneratePage() {
     return () => clearInterval(timer);
   }, [fetchJobs]);
 
-  useEffect(() => {
+useEffect(() => {
     if (!activeJobId || !activeImageId || !activeJobStatus) return;
     if (activeJobStatus === "SUCCEEDED" || activeJobStatus === "FAILED") {
       void fetchImageDetail(activeImageId);
       return;
     }
-
     setImageDetail(null);
   }, [activeJobId, activeImageId, activeJobStatus, fetchImageDetail]);
 
@@ -307,11 +305,7 @@ export default function GeneratePage() {
         {/* Queue list */}
         <div className="flex-1 overflow-y-auto">
           <div className="px-4 pt-4 pb-2 flex items-center justify-between">
-            <p
-              className="section-label uppercase"
-            >
-              Queue
-            </p>
+            <p className="section-label uppercase">Queue</p>
             {hasProcessing && (
               <span
                 className="text-[11px] font-medium px-2 py-0.5 rounded-full"
@@ -346,7 +340,6 @@ export default function GeneratePage() {
                       job.status === "PROCESSING" && !active && "animate-[pulse_3s_ease-in-out_infinite]",
                     )}
                   >
-                    {/* Thumbnail placeholder */}
                     <div className="w-9 h-9 rounded-md bg-[#EDE8DF] flex-shrink-0 overflow-hidden">
                       <img
                         src={`/api/images/${job.image.id}/file`}
@@ -427,6 +420,7 @@ export default function GeneratePage() {
           )}
         </div>
 
+        {/* Right column */}
         <div className="w-[280px] flex-shrink-0 overflow-y-auto space-y-4">
           {activeJob?.status === "FAILED" && (
             <div
@@ -495,6 +489,7 @@ export default function GeneratePage() {
               </p>
             )}
           </div>
+
         </div>
       </div>
       </div>

@@ -39,10 +39,6 @@ export class ProviderCredentialService {
       }
     }
 
-    if (hasIncomingApiKey && incomingApiKey) {
-      await this.credentials.upsert(userId, payload.provider, encryptApiKey(incomingApiKey));
-    }
-
     const preferredHasIncomingKey =
       payload.preferredProvider === payload.provider && hasIncomingApiKey;
 
@@ -56,9 +52,20 @@ export class ProviderCredentialService {
       }
     }
 
+    // Save model preference per-provider on the credential row
+    const modelValue = payload.preferredModel?.trim() || null;
+    if (hasIncomingApiKey && incomingApiKey) {
+      // Re-upsert including model so it's set atomically with the key
+      await this.credentials.upsert(userId, payload.provider, encryptApiKey(incomingApiKey), modelValue);
+    } else {
+      const existingCredential = await this.credentials.findByUserIdAndProvider(userId, payload.provider);
+      if (existingCredential) {
+        await this.credentials.updateModel(userId, payload.provider, modelValue);
+      }
+    }
+
     await this.users.updatePreferences(user.id, {
       preferredProvider: payload.preferredProvider,
-      preferredModel: payload.preferredModel,
       preferredPromptTemplateId: payload.preferredPromptTemplateId,
     });
   }
@@ -72,10 +79,15 @@ export class ProviderCredentialService {
     const rows = await this.credentials.listByUserId(userId);
     const promptTemplates = await this.promptTemplates.listActive("CAPTION", userId);
     const keys: Partial<Record<AIProviderType, string>> = {};
+    const models: Partial<Record<AIProviderType, string>> = {};
+
     await Promise.all(
       rows.map(async (row) => {
         const decoded = decryptApiKeyWithFlag(row.apiKey);
         keys[row.provider] = decoded.value;
+        if (row.preferredModel) {
+          models[row.provider] = row.preferredModel;
+        }
         if (!decoded.encrypted) {
           await this.credentials.upsert(userId, row.provider, encryptApiKey(decoded.value));
         }
@@ -84,10 +96,10 @@ export class ProviderCredentialService {
 
     return {
       preferredProvider: user.preferredProvider,
-      preferredModel: user.preferredModel,
       preferredPromptTemplateId: user.preferredPromptTemplateId,
       promptTemplates,
       keys,
+      models,
     };
   }
 
@@ -101,5 +113,10 @@ export class ProviderCredentialService {
       await this.credentials.upsert(userId, provider, encryptApiKey(decoded.value));
     }
     return decoded.value;
+  }
+
+  async getProviderModel(userId: string, provider: AIProviderType) {
+    const row = await this.credentials.findByUserIdAndProvider(userId, provider);
+    return row?.preferredModel ?? null;
   }
 }

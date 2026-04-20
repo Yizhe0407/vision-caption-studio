@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE `AIRequest` MODIFY `provider` ENUM('OPENAI', 'OPENROUTER', 'GEMINI', 'CLAUDE', 'NVIDIA_NIM') NOT NULL;
+
+-- AlterTable
+ALTER TABLE `User` MODIFY `preferredProvider` ENUM('OPENAI', 'OPENROUTER', 'GEMINI', 'CLAUDE', 'NVIDIA_NIM') NOT NULL DEFAULT 'OPENAI';
+
+-- AlterTable
+ALTER TABLE `UserProviderCredential` MODIFY `provider` ENUM('OPENAI', 'OPENROUTER', 'GEMINI', 'CLAUDE', 'NVIDIA_NIM') NOT NULL;

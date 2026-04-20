@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ProviderCredentialService } from "@/src/services/provider-credential.service";
 
-const providerSchema = z.enum(["OPENAI", "OPENROUTER", "GEMINI", "CLAUDE"]);
+const providerSchema = z.enum(["OPENAI", "OPENROUTER", "GEMINI", "CLAUDE", "NVIDIA_NIM"]);
 
 export class ProviderCredentialController {
   constructor(private readonly service: ProviderCredentialService) {}
