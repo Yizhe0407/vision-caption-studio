@@ -6,7 +6,7 @@ export const IMAGE_PROCESSING_QUEUE = "image-processing";
 export type ImageProcessingPayload = {
   imageId: string;
   userId: string;
-  provider?: "OPENAI" | "OPENROUTER" | "GEMINI" | "CLAUDE";
+  provider?: "OPENAI" | "OPENROUTER" | "GEMINI" | "CLAUDE" | "NVIDIA_NIM";
   model?: string;
 };
 

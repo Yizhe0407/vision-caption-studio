@@ -7,6 +7,7 @@ import { OpenAIProvider } from "@/src/infrastructure/ai/providers/openai-provide
 import { OpenRouterProvider } from "@/src/infrastructure/ai/providers/openrouter-provider";
 import { GeminiProvider } from "@/src/infrastructure/ai/providers/gemini-provider";
 import { ClaudeProvider } from "@/src/infrastructure/ai/providers/claude-provider";
+import { NvidiaNimProvider } from "@/src/infrastructure/ai/providers/nvidia-nim-provider";
 
 export class AIProviderFactory {
   private static readonly MAX_CACHE_SIZE = 100;
@@ -54,6 +55,13 @@ export class AIProviderFactory {
         return new ClaudeProvider(
           new Anthropic({
             apiKey,
+          }),
+        );
+      case "NVIDIA_NIM":
+        return new NvidiaNimProvider(
+          new OpenAI({
+            apiKey,
+            baseURL: "https://integrate.api.nvidia.com/v1",
           }),
         );
       default:

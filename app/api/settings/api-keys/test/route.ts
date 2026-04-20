@@ -10,13 +10,13 @@ import { env } from "@/src/lib/env";
 export const runtime = "nodejs";
 
 function getDefaultModel(provider: AIProviderType) {
-  return provider === "OPENROUTER"
-    ? env.OPENROUTER_MODEL
-    : provider === "GEMINI"
-      ? env.GEMINI_MODEL
-      : provider === "CLAUDE"
-        ? env.ANTHROPIC_MODEL
-        : env.OPENAI_MODEL;
+  switch (provider) {
+    case "OPENROUTER": return env.OPENROUTER_MODEL;
+    case "GEMINI":     return env.GEMINI_MODEL;
+    case "CLAUDE":     return env.ANTHROPIC_MODEL;
+    case "NVIDIA_NIM": return env.NVIDIA_NIM_MODEL;
+    default:           return env.OPENAI_MODEL;
+  }
 }
 
 async function verifyApiKey(provider: AIProviderType, apiKey: string, model: string) {
@@ -51,6 +51,15 @@ async function verifyApiKey(provider: AIProviderType, apiKey: string, model: str
         model,
         max_tokens: 8,
         messages: [{ role: "user", content: "ping" }],
+      });
+      return;
+    }
+    case "NVIDIA_NIM": {
+      const client = new OpenAI({ apiKey, baseURL: "https://integrate.api.nvidia.com/v1" });
+      await client.chat.completions.create({
+        model,
+        messages: [{ role: "user", content: "ping" }],
+        max_tokens: 8,
       });
       return;
     }

@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import { toFriendlyError } from "@/src/lib/friendly-error";
 import { cn } from "@/src/lib/cn";
 
-type Provider = "OPENAI" | "OPENROUTER" | "GEMINI" | "CLAUDE";
+type Provider = "OPENAI" | "OPENROUTER" | "GEMINI" | "CLAUDE" | "NVIDIA_NIM";
 type ApiError = { ok: false; error?: string };
 type SettingsResponse = {
   ok: true;
@@ -41,6 +41,11 @@ const PROVIDERS: { id: Provider; label: string; description: string }[] = [
     label: "OpenRouter",
     description: "多模型閘道，支援 70+ 開放與私有模型。",
   },
+  {
+    id: "NVIDIA_NIM",
+    label: "NVIDIA NIM",
+    description: "NVIDIA NIM 推理平台 — 高效能加速模型部署。",
+  },
 ];
 
 function InputStyles() {
@@ -58,7 +63,7 @@ export default function ApiSettingsPage() {
   const [provider, setProvider] = useState<Provider>("OPENAI");
   const [preferredModel, setPreferredModel] = useState("");
   const [keys, setKeys]         = useState<Record<Provider, string>>({
-    OPENAI: "", OPENROUTER: "", GEMINI: "", CLAUDE: "",
+    OPENAI: "", OPENROUTER: "", GEMINI: "", CLAUDE: "", NVIDIA_NIM: "",
   });
   const [showKey, setShowKey]   = useState(false);
   const [saving, setSaving]     = useState(false);
@@ -84,6 +89,7 @@ export default function ApiSettingsPage() {
         OPENROUTER:  data.settings.keys.OPENROUTER  ?? "",
         GEMINI:      data.settings.keys.GEMINI      ?? "",
         CLAUDE:      data.settings.keys.CLAUDE      ?? "",
+        NVIDIA_NIM:  data.settings.keys.NVIDIA_NIM  ?? "",
       });
       const templates = data.settings.promptTemplates ?? [];
       setPromptTemplates(templates);
@@ -273,7 +279,9 @@ export default function ApiSettingsPage() {
                     ? "例如 openai/gpt-4.1-mini"
                     : provider === "GEMINI"
                       ? "例如 gemini-2.5-flash"
-                      : "例如 claude-3-5-sonnet-latest"
+                      : provider === "NVIDIA_NIM"
+                        ? "例如 mistralai/mistral-large-3-675b-instruct-2512"
+                        : "例如 claude-3-5-sonnet-latest"
               }
               className="api-input w-full h-10 px-3 rounded-[10px] body-text text-[#1C1917] outline-none transition-all duration-[120ms]"
               style={{

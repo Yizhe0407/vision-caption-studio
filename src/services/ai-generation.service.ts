@@ -17,6 +17,7 @@ function estimateCostUsd(provider: AIProviderType, inputTokens: number, outputTo
     OPENROUTER: [env.OPENROUTER_INPUT_USD_PER_1K, env.OPENROUTER_OUTPUT_USD_PER_1K],
     GEMINI: [env.GEMINI_INPUT_USD_PER_1K, env.GEMINI_OUTPUT_USD_PER_1K],
     CLAUDE: [env.CLAUDE_INPUT_USD_PER_1K, env.CLAUDE_OUTPUT_USD_PER_1K],
+    NVIDIA_NIM: [env.NVIDIA_NIM_INPUT_USD_PER_1K, env.NVIDIA_NIM_OUTPUT_USD_PER_1K],
   } as const;
 
   const [inputRate, outputRate] = pricing[provider];
@@ -115,7 +116,9 @@ export class AIGenerationService {
           ? env.GEMINI_MODEL
           : provider === "CLAUDE"
             ? env.ANTHROPIC_MODEL
-            : env.OPENAI_MODEL);
+            : provider === "NVIDIA_NIM"
+              ? env.NVIDIA_NIM_MODEL
+              : env.OPENAI_MODEL);
 
     const request = await this.requests.create({
       provider,

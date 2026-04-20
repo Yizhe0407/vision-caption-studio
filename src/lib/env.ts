@@ -66,7 +66,9 @@ const envSchema = z.object({
   GEMINI_MODEL: z.string().min(1),
   ANTHROPIC_API_KEY: emptyToUndefined,
   ANTHROPIC_MODEL: z.string().min(1),
-  DEFAULT_AI_PROVIDER: z.enum(["OPENAI", "OPENROUTER", "GEMINI", "CLAUDE"]),
+  NVIDIA_NIM_API_KEY: emptyToUndefined,
+  NVIDIA_NIM_MODEL: z.string().min(1),
+  DEFAULT_AI_PROVIDER: z.enum(["OPENAI", "OPENROUTER", "GEMINI", "CLAUDE", "NVIDIA_NIM"]),
   OPENAI_INPUT_USD_PER_1K: z.coerce.number().nonnegative(),
   OPENAI_OUTPUT_USD_PER_1K: z.coerce.number().nonnegative(),
   OPENROUTER_INPUT_USD_PER_1K: z.coerce.number().nonnegative(),
@@ -75,6 +77,8 @@ const envSchema = z.object({
   GEMINI_OUTPUT_USD_PER_1K: z.coerce.number().nonnegative(),
   CLAUDE_INPUT_USD_PER_1K: z.coerce.number().nonnegative(),
   CLAUDE_OUTPUT_USD_PER_1K: z.coerce.number().nonnegative(),
+  NVIDIA_NIM_INPUT_USD_PER_1K: z.coerce.number().nonnegative(),
+  NVIDIA_NIM_OUTPUT_USD_PER_1K: z.coerce.number().nonnegative(),
   MAX_UPLOAD_FILE_SIZE_BYTES: z.coerce.number().int().positive(),
 });
 
@@ -112,6 +116,8 @@ export const env = envSchema.parse({
   GEMINI_MODEL: process.env.GEMINI_MODEL ?? "gemini-1.5-flash",
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
   ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL ?? "claude-3-5-sonnet-latest",
+  NVIDIA_NIM_API_KEY: process.env.NVIDIA_NIM_API_KEY,
+  NVIDIA_NIM_MODEL: process.env.NVIDIA_NIM_MODEL ?? "mistralai/mistral-large-3-675b-instruct-2512",
   DEFAULT_AI_PROVIDER: process.env.DEFAULT_AI_PROVIDER ?? "OPENAI",
   OPENAI_INPUT_USD_PER_1K: process.env.OPENAI_INPUT_USD_PER_1K ?? "0.00015",
   OPENAI_OUTPUT_USD_PER_1K: process.env.OPENAI_OUTPUT_USD_PER_1K ?? "0.0006",
@@ -121,5 +127,7 @@ export const env = envSchema.parse({
   GEMINI_OUTPUT_USD_PER_1K: process.env.GEMINI_OUTPUT_USD_PER_1K ?? "0.00105",
   CLAUDE_INPUT_USD_PER_1K: process.env.CLAUDE_INPUT_USD_PER_1K ?? "0.003",
   CLAUDE_OUTPUT_USD_PER_1K: process.env.CLAUDE_OUTPUT_USD_PER_1K ?? "0.015",
+  NVIDIA_NIM_INPUT_USD_PER_1K: process.env.NVIDIA_NIM_INPUT_USD_PER_1K ?? "0.002",
+  NVIDIA_NIM_OUTPUT_USD_PER_1K: process.env.NVIDIA_NIM_OUTPUT_USD_PER_1K ?? "0.002",
   MAX_UPLOAD_FILE_SIZE_BYTES: process.env.MAX_UPLOAD_FILE_SIZE_BYTES ?? String(20 * 1024 * 1024),
 });

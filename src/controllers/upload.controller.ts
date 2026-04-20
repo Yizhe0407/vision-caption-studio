@@ -5,7 +5,7 @@ import { JobService } from "@/src/services/job.service";
 
 const batchUploadSchema = z.object({
   userId: z.string().min(1),
-  provider: z.enum(["OPENAI", "OPENROUTER", "GEMINI", "CLAUDE"]).optional(),
+  provider: z.enum(["OPENAI", "OPENROUTER", "GEMINI", "CLAUDE", "NVIDIA_NIM"]).optional(),
   model: z.string().optional(),
   files: z.array(
     z.object({
