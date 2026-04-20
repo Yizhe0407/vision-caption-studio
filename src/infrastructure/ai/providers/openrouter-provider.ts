@@ -14,10 +14,10 @@ export class OpenRouterProvider implements AIProvider {
         {
           role: "user",
           content: [
-             {
-               type: "text",
-               text: promptWithJsonHint,
-              },
+            {
+              type: "text",
+              text: promptWithJsonHint,
+            },
             {
               type: "image_url",
               image_url: {
@@ -27,9 +27,6 @@ export class OpenRouterProvider implements AIProvider {
           ],
         },
       ],
-      response_format: {
-        type: "json_object",
-      },
     });
 
     const content = completion.choices[0]?.message?.content;

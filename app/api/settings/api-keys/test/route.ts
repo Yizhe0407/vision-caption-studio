@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 import { container } from "@/src/di/container";
 import { requireAuthUser } from "@/src/infrastructure/auth/request-auth";
 import { env } from "@/src/lib/env";
+import { resolveAIError } from "@/src/lib/resolve-ai-error";
 
 export const runtime = "nodejs";
 
@@ -35,7 +36,7 @@ async function verifyApiKey(provider: AIProviderType, apiKey: string, model: str
       await client.chat.completions.create({
         model,
         messages: [{ role: "user", content: "ping" }],
-        max_tokens: 8,
+        max_tokens: 32,
       });
       return;
     }
@@ -59,7 +60,7 @@ async function verifyApiKey(provider: AIProviderType, apiKey: string, model: str
       await client.chat.completions.create({
         model,
         messages: [{ role: "user", content: "ping" }],
-        max_tokens: 8,
+        max_tokens: 32,
       });
       return;
     }
@@ -93,7 +94,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   } catch (error) {
     return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "Unknown error" },
+      { ok: false, error: resolveAIError(error) },
       { status: 400 },
     );
   }

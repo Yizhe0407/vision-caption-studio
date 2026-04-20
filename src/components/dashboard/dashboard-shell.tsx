@@ -62,6 +62,7 @@ const pageTitles: Record<string, string> = {
   "/dashboard/prompt-templates": "Prompt Templates",
   "/dashboard/settings/api": "API Settings",
   "/dashboard/admin/users": "User Management",
+  "/dashboard/debug": "Debug Logs",
 };
 
 function isActive(href: string, exact: boolean, pathname: string) {
@@ -73,6 +74,32 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [role, setRole] = useState<"USER" | "ADMIN" | null>(null);
   const [email, setEmail] = useState<string | null>(null);
+
+  // Secret debug panel: type "dev" in sequence within 1.5s
+  useEffect(() => {
+    const SEQ = ["d", "e", "v"];
+    const buf: string[] = [];
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    function onKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      buf.push(e.key.toLowerCase());
+      if (buf.length > SEQ.length) buf.shift();
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => buf.splice(0), 1500);
+      if (buf.join("") === SEQ.join("")) {
+        buf.splice(0);
+        router.push("/dashboard/debug");
+      }
+    }
+
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      if (timer) clearTimeout(timer);
+    };
+  }, [router]);
 
   useEffect(() => {
     async function fetchMe() {

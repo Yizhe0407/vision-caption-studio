@@ -10,6 +10,7 @@ import { PromptTemplateRepository } from "@/src/repositories/prompt-template.rep
 import { TagRepository } from "@/src/repositories/tag.repository";
 import { UserRepository } from "@/src/repositories/user.repository";
 import { ProviderCredentialService } from "@/src/services/provider-credential.service";
+import { resolveAIError } from "@/src/lib/resolve-ai-error";
 
 function estimateCostUsd(provider: AIProviderType, inputTokens: number, outputTokens: number) {
   const pricing = {
@@ -32,32 +33,6 @@ async function streamToBuffer(stream: NodeJS.ReadableStream) {
   return Buffer.concat(chunks);
 }
 
-function resolveErrorMessage(error: unknown) {
-  if (!(error instanceof Error)) return "Unknown error";
-
-  const maybeRaw = (
-    error as Error & {
-      error?: {
-        metadata?: {
-          raw?: string;
-        };
-      };
-    }
-  ).error?.metadata?.raw;
-
-  if (typeof maybeRaw === "string" && maybeRaw.trim().length > 0) {
-    try {
-      const parsed = JSON.parse(maybeRaw) as { error?: { message?: string } };
-      if (parsed.error?.message && parsed.error.message.trim().length > 0) {
-        return parsed.error.message;
-      }
-    } catch {
-      // Keep original message
-    }
-  }
-
-  return error.message;
-}
 
 export class AIGenerationService {
   constructor(
@@ -164,7 +139,7 @@ export class AIGenerationService {
 
       await this.jobs.updateStatus(input.queueJobId, "SUCCEEDED");
     } catch (error) {
-      const errorMessage = resolveErrorMessage(error);
+      const errorMessage = resolveAIError(error);
       await this.requests.complete({
         id: request.id,
         status: "FAILED",

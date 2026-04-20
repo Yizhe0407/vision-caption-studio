@@ -27,9 +27,6 @@ export class NvidiaNimProvider implements AIProvider {
           ],
         },
       ],
-      response_format: {
-        type: "json_object",
-      },
     });
 
     const content = completion.choices[0]?.message?.content;

@@ -48,6 +48,28 @@ export class AIRequestRepository {
     });
   }
 
+  async listRecent(limit = 100) {
+    return prisma.aIRequest.findMany({
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        provider: true,
+        model: true,
+        status: true,
+        taskType: true,
+        inputTokens: true,
+        outputTokens: true,
+        totalTokens: true,
+        estimatedCostUsd: true,
+        errorMessage: true,
+        startedAt: true,
+        finishedAt: true,
+        createdAt: true,
+      },
+    });
+  }
+
   async createManualSucceeded(input: { provider: AIProviderType; promptTemplateId: string }) {
     return prisma.aIRequest.create({
       data: {
