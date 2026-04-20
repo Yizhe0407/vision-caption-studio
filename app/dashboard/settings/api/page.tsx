@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, Eye, EyeOff, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, Loader2, Lock, Plug, XCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import { toFriendlyError } from "@/src/lib/friendly-error";
 import { cn } from "@/src/lib/cn";
@@ -12,10 +12,10 @@ type SettingsResponse = {
   ok: true;
   settings: {
     preferredProvider: Provider;
-    preferredModel: string | null;
     preferredPromptTemplateId: string | null;
     promptTemplates: Array<{ id: string; name: string; version: number }>;
     keys: Partial<Record<Provider, string>>;
+    models: Partial<Record<Provider, string>>;
   };
 };
 type TestResult = { status: "ok" | "error"; message: string } | null;
@@ -48,6 +48,14 @@ const PROVIDERS: { id: Provider; label: string; description: string }[] = [
   },
 ];
 
+const MODEL_PLACEHOLDERS: Record<Provider, string> = {
+  OPENAI: "例如 gpt-4.1-mini",
+  OPENROUTER: "例如 openai/gpt-4.1-mini",
+  GEMINI: "例如 gemini-2.5-flash",
+  NVIDIA_NIM: "例如 mistralai/mistral-large-3-675b-instruct-2512",
+  CLAUDE: "例如 claude-3-5-sonnet-latest",
+};
+
 function InputStyles() {
   return (
     <style>{`
@@ -59,20 +67,25 @@ function InputStyles() {
   );
 }
 
+const emptyModels = (): Record<Provider, string> => ({
+  OPENAI: "", OPENROUTER: "", GEMINI: "", CLAUDE: "", NVIDIA_NIM: "",
+});
+
 export default function ApiSettingsPage() {
   const [provider, setProvider] = useState<Provider>("OPENAI");
-  const [preferredModel, setPreferredModel] = useState("");
-  const [keys, setKeys]         = useState<Record<Provider, string>>({
+  const [models, setModels] = useState<Record<Provider, string>>(emptyModels());
+  const [keys, setKeys] = useState<Record<Provider, string>>({
     OPENAI: "", OPENROUTER: "", GEMINI: "", CLAUDE: "", NVIDIA_NIM: "",
   });
-  const [showKey, setShowKey]   = useState(false);
-  const [saving, setSaving]     = useState(false);
-  const [testing, setTesting]   = useState(false);
+  const [showKey, setShowKey] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<TestResult>(null);
   const [promptTemplates, setPromptTemplates] = useState<Array<{ id: string; name: string; version: number }>>([]);
   const [preferredPromptTemplateId, setPreferredPromptTemplateId] = useState<string>("");
 
   const currentKey = keys[provider];
+  const currentModel = models[provider];
   const providerInfo = PROVIDERS.find((p) => p.id === provider)!;
 
   /* ── Fetch ─────────────────────────────────────────── */
@@ -83,13 +96,19 @@ export default function ApiSettingsPage() {
       const data = (await res.json()) as SettingsResponse | ApiError;
       if (!data.ok) throw new Error(data.error);
       setProvider(data.settings.preferredProvider);
-      setPreferredModel(data.settings.preferredModel ?? "");
       setKeys({
         OPENAI:      data.settings.keys.OPENAI      ?? "",
         OPENROUTER:  data.settings.keys.OPENROUTER  ?? "",
         GEMINI:      data.settings.keys.GEMINI      ?? "",
         CLAUDE:      data.settings.keys.CLAUDE      ?? "",
         NVIDIA_NIM:  data.settings.keys.NVIDIA_NIM  ?? "",
+      });
+      setModels({
+        OPENAI:      data.settings.models.OPENAI      ?? "",
+        OPENROUTER:  data.settings.models.OPENROUTER  ?? "",
+        GEMINI:      data.settings.models.GEMINI      ?? "",
+        CLAUDE:      data.settings.models.CLAUDE      ?? "",
+        NVIDIA_NIM:  data.settings.models.NVIDIA_NIM  ?? "",
       });
       const templates = data.settings.promptTemplates ?? [];
       setPromptTemplates(templates);
@@ -119,7 +138,7 @@ export default function ApiSettingsPage() {
           provider,
           apiKey: currentKey,
           preferredProvider: provider,
-          preferredModel: preferredModel.trim() || undefined,
+          preferredModel: currentModel.trim() || undefined,
           preferredPromptTemplateId: preferredPromptTemplateId || undefined,
         }),
       });
@@ -151,7 +170,7 @@ export default function ApiSettingsPage() {
         body: JSON.stringify({
           provider,
           apiKey: currentKey.trim(),
-          model: preferredModel.trim() || undefined,
+          model: currentModel.trim() || undefined,
         }),
       });
       const data = (await res.json()) as { ok: boolean; error?: string };
@@ -270,28 +289,18 @@ export default function ApiSettingsPage() {
               預設模型（Model）
             </label>
             <input
-              value={preferredModel}
-              onChange={(e) => setPreferredModel(e.target.value)}
-              placeholder={
-                provider === "OPENAI"
-                  ? "例如 gpt-4.1-mini"
-                  : provider === "OPENROUTER"
-                    ? "例如 openai/gpt-4.1-mini"
-                    : provider === "GEMINI"
-                      ? "例如 gemini-2.5-flash"
-                      : provider === "NVIDIA_NIM"
-                        ? "例如 mistralai/mistral-large-3-675b-instruct-2512"
-                        : "例如 claude-3-5-sonnet-latest"
-              }
+              value={currentModel}
+              onChange={(e) => setModels((prev) => ({ ...prev, [provider]: e.target.value }))}
+              placeholder={MODEL_PLACEHOLDERS[provider]}
               className="api-input w-full h-10 px-3 rounded-[10px] body-text text-[#1C1917] outline-none transition-all duration-[120ms]"
               style={{
                 background: "#F5F1EB",
                 border: "1px solid rgba(0,0,0,0.12)",
-                fontFamily: preferredModel ? "var(--font-geist-mono)" : "inherit",
+                fontFamily: currentModel ? "var(--font-geist-mono)" : "inherit",
               }}
             />
             <p className="section-label mt-1 text-[#A8A29E]">
-              未填寫時會使用系統預設模型；填寫後生成與測試都會使用你指定的模型。
+              未填寫時會使用系統預設模型；填寫後生成與測試都會使用你指定的模型。每個 Provider 獨立記憶。
             </p>
           </div>
 
@@ -332,7 +341,7 @@ export default function ApiSettingsPage() {
               {testing ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <span className="w-4 h-4 text-base leading-none">🔌</span>
+                <Plug className="w-4 h-4" />
               )}
               Test Connection
             </button>
@@ -370,7 +379,7 @@ export default function ApiSettingsPage() {
           </button>
 
           <p className="section-label text-[#A8A29E] flex items-center gap-1.5">
-            <span>🔒</span>
+            <Lock className="w-3.5 h-3.5" />
             API Key 加密後存入資料庫，切換 Provider 時自動帶入對應值。
           </p>
         </div>

@@ -107,9 +107,10 @@ export class AIGenerationService {
     }
 
     const provider = input.provider ?? user.preferredProvider ?? env.DEFAULT_AI_PROVIDER;
+    const providerModel = await this.credentials.getProviderModel(input.userId, provider);
     const model =
       input.model ??
-      user.preferredModel ??
+      providerModel ??
       (provider === "OPENROUTER"
         ? env.OPENROUTER_MODEL
         : provider === "GEMINI"
