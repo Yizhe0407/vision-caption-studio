@@ -133,13 +133,14 @@ model AIRequest {
 }
 
 model Caption {
-  id            String    @id @default(cuid())
-  imageId       String
-  aiRequestId   String
-  content       String    @db.Text
-  createdAt     DateTime  @default(now())
-  image         Image     @relation(fields: [imageId], references: [id], onDelete: Cascade)
-  aiRequest     AIRequest @relation(fields: [aiRequestId], references: [id], onDelete: Restrict)
+  id             String    @id @default(cuid())
+  imageId        String
+  aiRequestId    String
+  content        String    @db.Text
+  structuredTags Json?
+  createdAt      DateTime  @default(now())
+  image          Image     @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  aiRequest      AIRequest @relation(fields: [aiRequestId], references: [id], onDelete: Restrict)
 }
 
 model Tag {

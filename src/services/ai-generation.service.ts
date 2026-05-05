@@ -1,4 +1,4 @@
-import type { AIProviderType } from "@prisma/client";
+import type { AIProviderType, Prisma } from "@prisma/client";
 import { env } from "@/src/lib/env";
 import { AIProviderFactory } from "@/src/infrastructure/ai/ai-provider-factory";
 import { minioClient } from "@/src/infrastructure/storage/minio-client";
@@ -122,7 +122,7 @@ export class AIGenerationService {
         model,
       });
 
-      await this.captions.create(image.id, request.id, result.caption);
+      await this.captions.create(image.id, request.id, result.caption, result.structuredTags as Prisma.InputJsonValue | undefined);
       await this.tags.connectTagsToImage(image.id, result.tags);
       await this.requests.complete({
         id: request.id,

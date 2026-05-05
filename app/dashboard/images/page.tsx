@@ -22,12 +22,28 @@ type JobItem = {
   };
 };
 
+type StructuredTags = {
+  category: string;
+  product_type: string;
+  shape: string;
+  material: string[];
+  texture: string[];
+  pattern: string[];
+  pattern_layout: string;
+  technique: string[];
+  color: { primary: string[]; secondary: string[]; accent: string[] };
+  style: string[];
+  details: string[];
+  mood: string[];
+};
+
 type ImageDetail = {
   id: string;
   originalFilename: string;
   imageUrl: string;
   captions: Array<{ id: string; content: string }>;
   tags: Array<{ tag: { name: string } }>;
+  structuredTags: StructuredTags | null;
 };
 
 type ApiError = { ok: false; error?: string };
@@ -108,8 +124,9 @@ export default function ImagesPage() {
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
 
-  const [captionDraft, setCaptionDraft] = useState("");
-  const [tagsDraft, setTagsDraft]       = useState<string[]>([]);
+  const [captionDraft, setCaptionDraft]     = useState("");
+  const [tagsDraft, setTagsDraft]           = useState<string[]>([]);
+  const [structuredTags, setStructuredTags] = useState<StructuredTags | null>(null);
   const [saving, setSaving]             = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -155,6 +172,7 @@ export default function ImagesPage() {
       setActiveImage(data.image);
       setCaptionDraft(data.image.captions[0]?.content ?? "");
       setTagsDraft(data.image.tags.map((t) => t.tag.name));
+      setStructuredTags(data.image.structuredTags ?? null);
     } catch (err) {
       const msg = err instanceof Error ? err.message : undefined;
       toast.error(toFriendlyError(msg, "無法載入圖片詳情。"));
@@ -486,6 +504,56 @@ export default function ImagesPage() {
                       }}
                     />
                   </div>
+
+                  {/* Structured Tags */}
+                  {structuredTags && (
+                    <div className="border-t border-black/[0.06] pt-4 mb-5 space-y-3">
+                      <label
+                        className="block uppercase"
+                        style={{ fontSize: "11px", fontWeight: 500, color: "#78716C", letterSpacing: "0.06em" }}
+                      >
+                        Structured Tags
+                      </label>
+                      {[
+                        { label: "Category", values: structuredTags.category ? [structuredTags.category] : [] },
+                        { label: "Product Type", values: structuredTags.product_type ? [structuredTags.product_type] : [] },
+                        { label: "Shape", values: structuredTags.shape ? [structuredTags.shape] : [] },
+                        { label: "Color (Primary)", values: structuredTags.color.primary },
+                        { label: "Color (Secondary)", values: structuredTags.color.secondary },
+                        { label: "Color (Accent)", values: structuredTags.color.accent },
+                        { label: "Material", values: structuredTags.material },
+                        { label: "Texture", values: structuredTags.texture },
+                        { label: "Pattern", values: structuredTags.pattern },
+                        { label: "Pattern Layout", values: structuredTags.pattern_layout ? [structuredTags.pattern_layout] : [] },
+                        { label: "Technique", values: structuredTags.technique },
+                        { label: "Style", values: structuredTags.style },
+                        { label: "Details", values: structuredTags.details },
+                        { label: "Mood", values: structuredTags.mood },
+                      ]
+                        .filter((row) => row.values.length > 0)
+                        .map((row) => (
+                          <div key={row.label}>
+                            <p
+                              className="mb-1"
+                              style={{ fontSize: "10px", fontWeight: 500, color: "#A8A29E", textTransform: "uppercase", letterSpacing: "0.05em" }}
+                            >
+                              {row.label}
+                            </p>
+                            <div className="flex flex-wrap gap-1">
+                              {row.values.map((v) => (
+                                <span
+                                  key={v}
+                                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                                  style={{ background: "#EDE8DF", color: "#1C1917", border: "1px solid rgba(0,0,0,0.08)" }}
+                                >
+                                  {v}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
 
                   {/* Tags */}
                   <div className="border-t border-black/[0.06] pt-4">

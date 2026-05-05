@@ -31,6 +31,7 @@ export class ImageController {
       imageUrl: `/api/images/${image.id}/file`,
       captions: image.captions,
       tags: image.tags,
+      structuredTags: image.captions[0]?.structuredTags ?? null,
     };
   }
 

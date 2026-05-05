@@ -39,6 +39,7 @@ export class OpenRouterProvider implements AIProvider {
     return {
       caption: parsed.caption,
       tags: parsed.tags,
+      structuredTags: parsed.structuredTags,
       usage: {
         inputTokens: completion.usage?.prompt_tokens ?? 0,
         outputTokens: completion.usage?.completion_tokens ?? 0,

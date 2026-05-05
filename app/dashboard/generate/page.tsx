@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ImageIcon, Loader2, Tag, UploadCloud } from "lucide-react";
+import { ImageIcon, Loader2, UploadCloud } from "lucide-react";
 import toast from "react-hot-toast";
 import { StatusBadge } from "@/src/components/ui/status-badge";
 import { toFriendlyError } from "@/src/lib/friendly-error";
@@ -15,12 +15,28 @@ type JobItem = {
   image: { id: string; originalFilename: string };
 };
 
+type StructuredTags = {
+  category: string;
+  product_type: string;
+  shape: string;
+  material: string[];
+  texture: string[];
+  pattern: string[];
+  pattern_layout: string;
+  technique: string[];
+  color: { primary: string[]; secondary: string[]; accent: string[] };
+  style: string[];
+  details: string[];
+  mood: string[];
+};
+
 type ImageDetail = {
   id: string;
   originalFilename: string;
   imageUrl: string;
   captions: Array<{ id: string; content: string }>;
   tags: Array<{ tag: { name: string } }>;
+  structuredTags: StructuredTags | null;
 };
 
 type ApiError = { ok: false; error?: string };
@@ -459,33 +475,66 @@ useEffect(() => {
             className="rounded-xl p-4"
             style={{ background: "var(--layer-card)", border: "1px solid rgba(0,0,0,0.07)" }}
           >
-            <p className="section-label mb-2 uppercase flex items-center gap-1.5">
-              <Tag className="w-3 h-3" />
-              Tags
-            </p>
+            <p className="section-label mb-3 uppercase">Structured Tags</p>
             {detailLoading ? (
-              <div className="flex gap-2 flex-wrap">
-                {[60, 80, 50, 90, 70].map((w, i) => (
-                  <div key={i} className="skeleton h-6 rounded-full" style={{ width: w }} />
+              <div className="space-y-3">
+                {[3, 2, 4].map((count, i) => (
+                  <div key={i}>
+                    <div className="skeleton h-2.5 rounded w-16 mb-1.5" />
+                    <div className="flex gap-1.5 flex-wrap">
+                      {Array.from({ length: count }).map((_, j) => (
+                        <div key={j} className="skeleton h-5 rounded-full" style={{ width: 48 + j * 12 }} />
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
-            ) : imageDetail && imageDetail.tags.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {imageDetail.tags.map((item) => (
-                  <span
-                    key={item.tag.name}
-                    className="px-3 py-1 rounded-full section-label border text-[#1C1917]"
-                    style={{ borderColor: "rgba(0,0,0,0.12)", background: "#F5F1EB" }}
-                  >
-                    {item.tag.name}
-                  </span>
-                ))}
+            ) : imageDetail?.structuredTags ? (
+              <div className="space-y-3">
+                {[
+                  { label: "Category",         values: imageDetail.structuredTags.category ? [imageDetail.structuredTags.category] : [] },
+                  { label: "Product Type",     values: imageDetail.structuredTags.product_type ? [imageDetail.structuredTags.product_type] : [] },
+                  { label: "Shape",            values: imageDetail.structuredTags.shape ? [imageDetail.structuredTags.shape] : [] },
+                  { label: "Color (Primary)",  values: imageDetail.structuredTags.color.primary },
+                  { label: "Color (Secondary)",values: imageDetail.structuredTags.color.secondary },
+                  { label: "Color (Accent)",   values: imageDetail.structuredTags.color.accent },
+                  { label: "Material",         values: imageDetail.structuredTags.material },
+                  { label: "Texture",          values: imageDetail.structuredTags.texture },
+                  { label: "Pattern",          values: imageDetail.structuredTags.pattern },
+                  { label: "Pattern Layout",   values: imageDetail.structuredTags.pattern_layout ? [imageDetail.structuredTags.pattern_layout] : [] },
+                  { label: "Technique",        values: imageDetail.structuredTags.technique },
+                  { label: "Style",            values: imageDetail.structuredTags.style },
+                  { label: "Details",          values: imageDetail.structuredTags.details },
+                  { label: "Mood",             values: imageDetail.structuredTags.mood },
+                ]
+                  .filter((row) => row.values.length > 0)
+                  .map((row) => (
+                    <div key={row.label}>
+                      <p
+                        className="mb-1"
+                        style={{ fontSize: "10px", fontWeight: 500, color: "#A8A29E", textTransform: "uppercase", letterSpacing: "0.05em" }}
+                      >
+                        {row.label}
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {row.values.map((v) => (
+                          <span
+                            key={v}
+                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                            style={{ background: "#EDE8DF", color: "#1C1917", border: "1px solid rgba(0,0,0,0.08)" }}
+                          >
+                            {v}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
               </div>
             ) : (
               <p className="body-text text-[#A8A29E]">
                 {activeJob?.status === "QUEUED" || activeJob?.status === "PROCESSING"
                   ? "生成中…"
-                  : "（無標籤）"}
+                  : "（無結構化標籤）"}
               </p>
             )}
           </div>
