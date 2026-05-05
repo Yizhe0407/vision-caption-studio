@@ -125,12 +125,12 @@ export class ProviderCredentialService {
 
     const row = await this.credentials.findByUserIdAndProvider(userId, provider);
     if (!row || row.apiKey.trim().length === 0) {
-      throw new Error(`此 Provider 尚未完成後端 API Key 設定，請聯絡系統管理者。`);
+      throw new Error(`The API key for this provider is not configured. Please contact the system administrator.`);
     }
     const decoded = decryptApiKeyWithFlag(row.apiKey);
     // Guard against encrypted-empty values left by older code paths.
     if (decoded.value.trim().length === 0) {
-      throw new Error(`此 Provider 尚未完成後端 API Key 設定，請聯絡系統管理者。`);
+      throw new Error(`The API key for this provider is not configured. Please contact the system administrator.`);
     }
     if (!decoded.encrypted) {
       await this.credentials.upsert(userId, provider, encryptApiKey(decoded.value));

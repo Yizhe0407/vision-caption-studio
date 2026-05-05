@@ -98,11 +98,11 @@ export class PromptTemplateService {
     }
     const total = await this.templates.countAll(userId);
     if (total <= 1) {
-      throw new Error("至少需要保留一個 Prompt Template。");
+      throw new Error("At least one prompt template must be kept.");
     }
     const usedCount = await this.templates.countAIRequests(id);
     if (usedCount > 0) {
-      throw new Error("此 Prompt Template 已被歷史任務使用，無法刪除。");
+      throw new Error("This prompt template has been used in tasks and cannot be deleted.");
     }
     return this.templates.deleteById(id, userId);
   }
