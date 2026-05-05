@@ -56,8 +56,6 @@ export default function GeneratePage() {
   const fileInputRef             = useRef<HTMLInputElement>(null);
   const [files, setFiles]        = useState<File[]>([]);
   const [dragOver, setDragOver]  = useState(false);
-  const [provider, setProvider]  = useState<string>("OPENAI");
-  const [providerReady, setProviderReady] = useState(false);
   const [jobs, setJobs]          = useState<JobItem[]>([]);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [imageDetail, setImageDetail] = useState<ImageDetail | null>(null);
@@ -119,25 +117,9 @@ const previewItems = useMemo(
     };
   }, [previewItems]);
 
-  async function fetchSettings() {
-    try {
-      const res = await fetch("/api/settings/api-keys");
-      const data = (await res.json()) as
-        | { ok: true; settings: { preferredProvider: string } }
-        | ApiError;
-      if (data.ok) {
-        setProvider(data.settings.preferredProvider);
-        setProviderReady(true);
-      }
-    } catch {
-      // non-critical
-    }
-  }
-
   /* ── Effects ───────────────────────────────────────── */
 
   useEffect(() => {
-    void fetchSettings();
     void fetchJobs();
     const timer = setInterval(() => void fetchJobs(), 3000);
     return () => clearInterval(timer);
@@ -178,12 +160,10 @@ useEffect(() => {
 
   async function onUpload() {
     if (files.length === 0) { toast.error("請先選擇至少一張圖片。"); return; }
-    if (!providerReady)     { toast.error("尚未讀取 API 設定，請稍後再試。"); return; }
 
     setUploading(true);
     const form = new FormData();
     files.forEach((f) => form.append("files", f));
-    form.append("provider", provider);
 
     try {
       const res = await fetch("/api/upload/batch", { method: "POST", body: form });
@@ -304,18 +284,6 @@ useEffect(() => {
             </button>
           )}
 
-          {/* Provider badge */}
-          {providerReady && (
-            <p className="mt-2 section-label text-[#A8A29E] text-center">
-              Provider:{" "}
-              <span
-                className="font-medium text-[#78716C]"
-                style={{ fontFamily: "var(--font-geist-mono)" }}
-              >
-                {provider}
-              </span>
-            </p>
-          )}
         </div>
 
         {/* Queue list */}

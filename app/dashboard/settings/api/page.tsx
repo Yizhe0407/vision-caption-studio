@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, Eye, EyeOff, Loader2, Lock, Plug, XCircle } from "lucide-react";
+import { CheckCircle2, Loader2, Lock, Plug, XCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import { toFriendlyError } from "@/src/lib/friendly-error";
 import { cn } from "@/src/lib/cn";
@@ -15,6 +15,7 @@ type SettingsResponse = {
     preferredPromptTemplateId: string | null;
     promptTemplates: Array<{ id: string; name: string; version: number }>;
     keys: Partial<Record<Provider, string>>;
+    keyStatus: Record<Provider, boolean>;
     models: Partial<Record<Provider, string>>;
   };
 };
@@ -74,18 +75,17 @@ const emptyModels = (): Record<Provider, string> => ({
 export default function ApiSettingsPage() {
   const [provider, setProvider] = useState<Provider>("OPENAI");
   const [models, setModels] = useState<Record<Provider, string>>(emptyModels());
-  const [keys, setKeys] = useState<Record<Provider, string>>({
-    OPENAI: "", OPENROUTER: "", GEMINI: "", CLAUDE: "", NVIDIA_NIM: "",
+  const [keyStatus, setKeyStatus] = useState<Record<Provider, boolean>>({
+    OPENAI: false, OPENROUTER: false, GEMINI: false, CLAUDE: false, NVIDIA_NIM: false,
   });
-  const [showKey, setShowKey] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<TestResult>(null);
   const [promptTemplates, setPromptTemplates] = useState<Array<{ id: string; name: string; version: number }>>([]);
   const [preferredPromptTemplateId, setPreferredPromptTemplateId] = useState<string>("");
 
-  const currentKey = keys[provider];
   const currentModel = models[provider];
+  const isBackendKeyConfigured = keyStatus[provider];
   const providerInfo = PROVIDERS.find((p) => p.id === provider)!;
 
   /* ── Fetch ─────────────────────────────────────────── */
@@ -96,13 +96,7 @@ export default function ApiSettingsPage() {
       const data = (await res.json()) as SettingsResponse | ApiError;
       if (!data.ok) throw new Error(data.error);
       setProvider(data.settings.preferredProvider);
-      setKeys({
-        OPENAI:      data.settings.keys.OPENAI      ?? "",
-        OPENROUTER:  data.settings.keys.OPENROUTER  ?? "",
-        GEMINI:      data.settings.keys.GEMINI      ?? "",
-        CLAUDE:      data.settings.keys.CLAUDE      ?? "",
-        NVIDIA_NIM:  data.settings.keys.NVIDIA_NIM  ?? "",
-      });
+      setKeyStatus(data.settings.keyStatus);
       setModels({
         OPENAI:      data.settings.models.OPENAI      ?? "",
         OPENROUTER:  data.settings.models.OPENROUTER  ?? "",
@@ -124,7 +118,7 @@ export default function ApiSettingsPage() {
   useEffect(() => { void fetchSettings(); }, []); // mount only
 
   /* Clear test result on provider change */
-  useEffect(() => { setTestResult(null); setShowKey(false); }, [provider]);
+  useEffect(() => { setTestResult(null); }, [provider]);
 
   /* ── Save ──────────────────────────────────────────── */
 
@@ -136,7 +130,6 @@ export default function ApiSettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           provider,
-          apiKey: currentKey,
           preferredProvider: provider,
           preferredModel: currentModel.trim() || undefined,
           preferredPromptTemplateId: preferredPromptTemplateId || undefined,
@@ -157,8 +150,8 @@ export default function ApiSettingsPage() {
   /* ── Test ──────────────────────────────────────────── */
 
   async function onTest() {
-    if (!currentKey.trim()) {
-      toast.error("請先輸入 API Key。");
+    if (!isBackendKeyConfigured) {
+      toast.error("此 Provider 尚未完成後端 API Key 設定，請聯絡系統管理者。");
       return;
     }
     setTesting(true);
@@ -169,13 +162,12 @@ export default function ApiSettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           provider,
-          apiKey: currentKey.trim(),
           model: currentModel.trim() || undefined,
         }),
       });
       const data = (await res.json()) as { ok: boolean; error?: string };
       if (!data.ok) throw new Error(data.error ?? "Connection failed");
-      setTestResult({ status: "ok", message: "Connected — API Key valid" });
+      setTestResult({ status: "ok", message: "後端 API Key 與模型連線正常。" });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Connection failed";
       setTestResult({ status: "error", message: msg });
@@ -251,37 +243,30 @@ export default function ApiSettingsPage() {
               </p>
           </div>
 
-          {/* API Key input */}
-          <div>
-            <label className="section-label block mb-1.5 uppercase">
-              {providerInfo.label} API Key
-            </label>
-            <div className="relative">
-              <input
-                type={showKey ? "text" : "password"}
-                value={currentKey}
-                onChange={(e) =>
-                  setKeys((prev) => ({ ...prev, [provider]: e.target.value }))
-                }
-                placeholder={`輸入 ${providerInfo.label} API Key`}
-                autoComplete="off"
-                className="api-input w-full h-10 pl-3 pr-10 rounded-[10px] body-text text-[#1C1917] outline-none transition-all duration-[120ms]"
-                style={{
-                  background: "#F5F1EB",
-                  border: "1px solid rgba(0,0,0,0.12)",
-                  fontFamily: currentKey ? "var(--font-geist-mono)" : "inherit",
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowKey((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A8A29E] hover:text-[#78716C] transition-colors"
-                tabIndex={-1}
-                aria-label={showKey ? "Hide key" : "Show key"}
-              >
-                {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
+          <div
+            className={cn(
+              "flex items-start gap-2 rounded-[10px] border px-3 py-2.5 body-text",
+              isBackendKeyConfigured
+                ? "text-[#3D7A5E]"
+                : "text-[#991B1B]",
+            )}
+            style={{
+              background: isBackendKeyConfigured ? "#ECFDF3" : "#FEE2E2",
+              borderColor: isBackendKeyConfigured
+                ? "rgba(61,122,94,0.18)"
+                : "rgba(153,27,27,0.12)",
+            }}
+          >
+            {isBackendKeyConfigured ? (
+              <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            ) : (
+              <XCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            )}
+            <span>
+              {isBackendKeyConfigured
+                ? "後端已設定此 Provider 的 API Key。"
+                : "後端尚未設定此 Provider 的 API Key，儲存或生成前請由系統管理者更新環境變數。"}
+            </span>
           </div>
 
           <div>
@@ -334,7 +319,7 @@ export default function ApiSettingsPage() {
             <button
               type="button"
               onClick={onTest}
-              disabled={testing || !currentKey.trim()}
+              disabled={testing || !isBackendKeyConfigured}
                className="h-9 px-4 rounded-[10px] body-text font-medium text-[#1C1917] flex items-center gap-2 border transition-all duration-[120ms] disabled:opacity-50 hover:bg-[#EDE8DF]"
               style={{ background: "#EDE8DF", borderColor: "rgba(0,0,0,0.07)" }}
             >
@@ -380,7 +365,7 @@ export default function ApiSettingsPage() {
 
           <p className="section-label text-[#A8A29E] flex items-center gap-1.5">
             <Lock className="w-3.5 h-3.5" />
-            API Key 加密後存入資料庫，切換 Provider 時自動帶入對應值。
+            API Key 由後端環境變數管理；此頁只儲存 Provider、模型與 Prompt Template 偏好。
           </p>
         </div>
       </div>

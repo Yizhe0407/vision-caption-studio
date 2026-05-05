@@ -5,7 +5,7 @@ const MESSAGE_MAP: Array<{ test: RegExp; message: string }> = [
   { test: /too small|string must contain at least 8|at least 8/i, message: "密碼至少需要 8 個字元。" },
   { test: /no files uploaded/i, message: "請至少選擇一張圖片後再上傳。" },
   { test: /file too large|image too large|max size/i, message: "圖片檔案過大，請將單張檔案控制在 20MB 內。" },
-  { test: /api key is not configured/i, message: "此 Provider 尚未設定 API Key，請先到 API 設定頁完成設定。" },
+  { test: /api key is not configured/i, message: "此 Provider 尚未完成後端 API Key 設定，請聯絡系統管理者。" },
   { test: /至少需要保留一個|at least one prompt/i, message: "至少需要保留一個 Prompt Template，無法全部刪除。" },
   { test: /已被歷史任務使用|cannot delete.*used/i, message: "這個 Prompt Template 已被歷史任務使用，不能刪除。" },
   { test: /invalid_api_key|incorrect api key|authentication/i, message: "API Key 驗證失敗，請確認是否貼上正確金鑰。" },

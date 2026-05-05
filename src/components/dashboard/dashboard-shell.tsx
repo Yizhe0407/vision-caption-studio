@@ -8,7 +8,6 @@ import {
   FileText,
   Home,
   LogOut,
-  Settings2,
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
@@ -46,7 +45,6 @@ function buildNavGroups(isAdmin: boolean): NavGroup[] {
       label: "Configure",
       items: [
         { href: "/dashboard/prompt-templates", label: "Prompt Templates", icon: FileText, exact: false },
-        { href: "/dashboard/settings/api", label: "API Settings", icon: Settings2, exact: false },
         ...(isAdmin
           ? [{ href: "/dashboard/admin/users", label: "User Management", icon: ShieldCheck, exact: false }]
           : []),

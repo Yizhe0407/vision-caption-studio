@@ -25,6 +25,22 @@ function estimateCostUsd(provider: AIProviderType, inputTokens: number, outputTo
   return ((inputTokens / 1000) * inputRate + (outputTokens / 1000) * outputRate).toFixed(6);
 }
 
+function getEnvModel(provider: AIProviderType) {
+  switch (provider) {
+    case "OPENROUTER":
+      return env.OPENROUTER_MODEL;
+    case "GEMINI":
+      return env.GEMINI_MODEL;
+    case "CLAUDE":
+      return env.ANTHROPIC_MODEL;
+    case "NVIDIA_NIM":
+      return env.NVIDIA_NIM_MODEL;
+    case "OPENAI":
+    default:
+      return env.OPENAI_MODEL;
+  }
+}
+
 async function streamToBuffer(stream: NodeJS.ReadableStream) {
   const chunks: Buffer[] = [];
   for await (const chunk of stream) {
@@ -82,19 +98,8 @@ export class AIGenerationService {
     }
 
     const provider = input.provider ?? user.preferredProvider ?? env.DEFAULT_AI_PROVIDER;
-    const providerModel = await this.credentials.getProviderModel(input.userId, provider);
-    const model =
-      input.model ??
-      providerModel ??
-      (provider === "OPENROUTER"
-        ? env.OPENROUTER_MODEL
-        : provider === "GEMINI"
-          ? env.GEMINI_MODEL
-          : provider === "CLAUDE"
-            ? env.ANTHROPIC_MODEL
-            : provider === "NVIDIA_NIM"
-              ? env.NVIDIA_NIM_MODEL
-              : env.OPENAI_MODEL);
+    const dbModel = await this.credentials.getProviderModel(input.userId, provider);
+    const model = input.model ?? dbModel ?? getEnvModel(provider);
 
     const request = await this.requests.create({
       provider,

@@ -43,7 +43,12 @@ export class UserRepository {
     });
   }
 
-  async createWithAutoRole(email: string, passwordHash: string, defaultTemplateContent: string) {
+  async createWithAutoRole(
+    email: string,
+    passwordHash: string,
+    defaultTemplateContent: string,
+    preferredProvider: AIProviderType,
+  ) {
     return prisma.$transaction(
       async (tx) => {
         const userCount = await tx.user.count();
@@ -54,6 +59,7 @@ export class UserRepository {
             email,
             passwordHash,
             role,
+            preferredProvider,
             ownedPromptTemplates: {
               create: {
                 name: "default-caption",

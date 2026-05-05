@@ -16,7 +16,6 @@ export class ProviderCredentialController {
       .object({
         userId: z.string().min(1),
         provider: providerSchema,
-        apiKey: z.string().optional(),
         preferredProvider: providerSchema,
         preferredModel: z.string().optional(),
         preferredPromptTemplateId: z.string().optional(),
@@ -25,7 +24,6 @@ export class ProviderCredentialController {
 
     await this.service.updateSetting(parsed.userId, {
       provider: parsed.provider,
-      apiKey: parsed.apiKey,
       preferredProvider: parsed.preferredProvider,
       preferredModel: parsed.preferredModel,
       preferredPromptTemplateId: parsed.preferredPromptTemplateId,

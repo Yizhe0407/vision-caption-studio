@@ -31,7 +31,12 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(password, 12);
     let user;
     try {
-      user = await this.users.createWithAutoRole(email, passwordHash, DEFAULT_TEMPLATE_CONTENT);
+      user = await this.users.createWithAutoRole(
+        email,
+        passwordHash,
+        DEFAULT_TEMPLATE_CONTENT,
+        env.DEFAULT_AI_PROVIDER,
+      );
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&

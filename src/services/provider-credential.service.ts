@@ -3,9 +3,29 @@ import {
   decryptApiKeyWithFlag,
   encryptApiKey,
 } from "@/src/infrastructure/security/api-key-crypto";
+import { env } from "@/src/lib/env";
 import { ProviderCredentialRepository } from "@/src/repositories/provider-credential.repository";
 import { PromptTemplateRepository } from "@/src/repositories/prompt-template.repository";
 import { UserRepository } from "@/src/repositories/user.repository";
+
+function getEnvApiKey(provider: AIProviderType): string | undefined {
+  const keyMap: Record<AIProviderType, string | undefined> = {
+    OPENAI: env.OPENAI_API_KEY,
+    OPENROUTER: env.OPENROUTER_API_KEY,
+    GEMINI: env.GEMINI_API_KEY,
+    CLAUDE: env.ANTHROPIC_API_KEY,
+    NVIDIA_NIM: env.NVIDIA_NIM_API_KEY,
+  };
+  const raw = keyMap[provider];
+  if (!raw || raw.trim().length === 0) return undefined;
+  // Decrypt if the value was accidentally stored in encrypted form; raw keys pass through unchanged.
+  const key = decryptApiKeyWithFlag(raw).value.trim();
+  return key.length > 0 ? key : undefined;
+}
+
+function normalizeApiKey(_provider: AIProviderType, apiKey: string) {
+  return apiKey.trim().replace(/^Bearer\s+/i, "");
+}
 
 export class ProviderCredentialService {
   constructor(
@@ -18,7 +38,6 @@ export class ProviderCredentialService {
     userId: string,
     payload: {
       provider: AIProviderType;
-      apiKey?: string;
       preferredProvider: AIProviderType;
       preferredModel?: string;
       preferredPromptTemplateId?: string;
@@ -29,9 +48,6 @@ export class ProviderCredentialService {
       throw new Error("User not found.");
     }
 
-    const incomingApiKey = payload.apiKey?.trim();
-    const hasIncomingApiKey = Boolean(incomingApiKey && incomingApiKey.length > 0);
-
     if (payload.preferredPromptTemplateId) {
       const prompt = await this.promptTemplates.getActiveById("CAPTION", payload.preferredPromptTemplateId, userId);
       if (!prompt) {
@@ -39,29 +55,18 @@ export class ProviderCredentialService {
       }
     }
 
-    const preferredHasIncomingKey =
-      payload.preferredProvider === payload.provider && hasIncomingApiKey;
-
-    if (!preferredHasIncomingKey) {
-      const preferredCredential = await this.credentials.findByUserIdAndProvider(
-        userId,
-        payload.preferredProvider,
-      );
-      if (!preferredCredential) {
-        throw new Error(`${payload.preferredProvider} API key is not configured.`);
-      }
-    }
+    await this.getRequiredApiKey(userId, payload.preferredProvider);
 
     // Save model preference per-provider on the credential row
     const modelValue = payload.preferredModel?.trim() || null;
-    if (hasIncomingApiKey && incomingApiKey) {
-      // Re-upsert including model so it's set atomically with the key
-      await this.credentials.upsert(userId, payload.provider, encryptApiKey(incomingApiKey), modelValue);
-    } else {
-      const existingCredential = await this.credentials.findByUserIdAndProvider(userId, payload.provider);
-      if (existingCredential) {
-        await this.credentials.updateModel(userId, payload.provider, modelValue);
-      }
+    const existingCredential = await this.credentials.findByUserIdAndProvider(userId, payload.provider);
+    if (existingCredential) {
+      await this.credentials.updateModel(userId, payload.provider, modelValue);
+    } else if (modelValue) {
+      // Create a stub (empty apiKey) solely to persist the model preference.
+      // getRequiredApiKey will still use the env key for auth; the stub is
+      // only consulted by getProviderModel during generation.
+      await this.credentials.upsert(userId, payload.provider, "", modelValue);
     }
 
     await this.users.updatePreferences(user.id, {
@@ -78,18 +83,28 @@ export class ProviderCredentialService {
 
     const rows = await this.credentials.listByUserId(userId);
     const promptTemplates = await this.promptTemplates.listActive("CAPTION", userId);
-    const keys: Partial<Record<AIProviderType, string>> = {};
     const models: Partial<Record<AIProviderType, string>> = {};
+    const keyStatus: Record<AIProviderType, boolean> = {
+      OPENAI: Boolean(getEnvApiKey("OPENAI")),
+      OPENROUTER: Boolean(getEnvApiKey("OPENROUTER")),
+      GEMINI: Boolean(getEnvApiKey("GEMINI")),
+      CLAUDE: Boolean(getEnvApiKey("CLAUDE")),
+      NVIDIA_NIM: Boolean(getEnvApiKey("NVIDIA_NIM")),
+    };
 
     await Promise.all(
       rows.map(async (row) => {
         const decoded = decryptApiKeyWithFlag(row.apiKey);
-        keys[row.provider] = decoded.value;
+        // Stub rows (empty apiKey) store model preferences for env-key providers;
+        // don't expose the empty value and don't re-encrypt it.
+        if (decoded.value.trim().length > 0) {
+          keyStatus[row.provider] = true;
+          if (!decoded.encrypted) {
+            await this.credentials.upsert(userId, row.provider, encryptApiKey(decoded.value));
+          }
+        }
         if (row.preferredModel) {
           models[row.provider] = row.preferredModel;
-        }
-        if (!decoded.encrypted) {
-          await this.credentials.upsert(userId, row.provider, encryptApiKey(decoded.value));
         }
       }),
     );
@@ -98,21 +113,29 @@ export class ProviderCredentialService {
       preferredProvider: user.preferredProvider,
       preferredPromptTemplateId: user.preferredPromptTemplateId,
       promptTemplates,
-      keys,
+      keys: {},
+      keyStatus,
       models,
     };
   }
 
   async getRequiredApiKey(userId: string, provider: AIProviderType) {
+    const envKey = getEnvApiKey(provider);
+    if (envKey) return normalizeApiKey(provider, envKey);
+
     const row = await this.credentials.findByUserIdAndProvider(userId, provider);
     if (!row || row.apiKey.trim().length === 0) {
-      throw new Error(`${provider} API key is not configured.`);
+      throw new Error(`此 Provider 尚未完成後端 API Key 設定，請聯絡系統管理者。`);
     }
     const decoded = decryptApiKeyWithFlag(row.apiKey);
+    // Guard against encrypted-empty values left by older code paths.
+    if (decoded.value.trim().length === 0) {
+      throw new Error(`此 Provider 尚未完成後端 API Key 設定，請聯絡系統管理者。`);
+    }
     if (!decoded.encrypted) {
       await this.credentials.upsert(userId, provider, encryptApiKey(decoded.value));
     }
-    return decoded.value;
+    return normalizeApiKey(provider, decoded.value);
   }
 
   async getProviderModel(userId: string, provider: AIProviderType) {

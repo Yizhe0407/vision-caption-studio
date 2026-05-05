@@ -466,7 +466,7 @@ export default function ImagesPage() {
                       className="px-4 py-3 rounded-xl text-sm text-[#991B1B] mb-5"
                       style={{ background: "#FEE2E2", border: "1px solid rgba(153,27,27,0.12)" }}
                     >
-                      生成失敗：{activeJob.errorMessage ?? "請檢查 API Key 設定。"}
+                      生成失敗：{activeJob.errorMessage ?? "此 Provider 尚未完成後端 API Key 設定，請聯絡系統管理者。"}
                     </div>
                   )}
 
