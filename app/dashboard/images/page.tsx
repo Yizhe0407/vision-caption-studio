@@ -49,9 +49,9 @@ type ImageDetail = {
 type ApiError = { ok: false; error?: string };
 
 const FILTERS: { label: string; value: FilterTab }[] = [
-  { label: "全部",     value: "ALL" },
-  { label: "成功",     value: "SUCCEEDED" },
-  { label: "失敗",     value: "FAILED" },
+  { label: "All",       value: "ALL" },
+  { label: "Succeeded", value: "SUCCEEDED" },
+  { label: "Failed",    value: "FAILED" },
 ];
 
 /* ── Tag input ─────────────────────────────────────────── */
@@ -96,7 +96,7 @@ function TagInput({
         onKeyDown={(e) => {
           if (e.key === "Enter") { e.preventDefault(); add(); }
         }}
-        placeholder="輸入標籤後按 Enter"
+        placeholder="Add tag and press Enter"
         className="w-full h-9 px-3 rounded-[10px] text-sm text-[#1C1917] outline-none transition-all duration-[120ms]"
         style={{ background: "#F5F1EB", border: "1px solid rgba(0,0,0,0.12)" }}
         onFocus={(e) => {
@@ -153,7 +153,7 @@ export default function ImagesPage() {
       if (data.ok) setJobs(data.jobs ?? []);
     } catch (err) {
       const msg = err instanceof Error ? err.message : undefined;
-      toast.error(toFriendlyError(msg, "無法載入資料清單。"));
+      toast.error(toFriendlyError(msg, "Failed to load image list."));
     } finally {
       setLoadingList(false);
     }
@@ -175,7 +175,7 @@ export default function ImagesPage() {
       setStructuredTags(data.image.structuredTags ?? null);
     } catch (err) {
       const msg = err instanceof Error ? err.message : undefined;
-      toast.error(toFriendlyError(msg, "無法載入圖片詳情。"));
+      toast.error(toFriendlyError(msg, "Failed to load image details."));
     } finally {
       setDrawerLoading(false);
     }
@@ -221,10 +221,10 @@ export default function ImagesPage() {
       });
       const data = (await res.json()) as { ok: boolean; error?: string };
       if (!data.ok) throw new Error(data.error);
-      toast.success("描述與標籤已更新。");
+      toast.success("Description and tags updated.");
     } catch (err) {
       const msg = err instanceof Error ? err.message : undefined;
-      toast.error(toFriendlyError(msg, "更新失敗，請稍後再試。"));
+      toast.error(toFriendlyError(msg, "Update failed, please try again."));
     } finally {
       setSaving(false);
     }
@@ -247,12 +247,12 @@ export default function ImagesPage() {
       const res = await fetch(`/api/images/${activeImage.id}`, { method: "DELETE" });
       const data = (await res.json()) as { ok: boolean; error?: string };
       if (!data.ok) throw new Error(data.error);
-      toast.success("資料已刪除。");
+      toast.success("Item deleted.");
       closeDrawer();
       await fetchJobs();
     } catch (err) {
       const msg = err instanceof Error ? err.message : undefined;
-      toast.error(toFriendlyError(msg, "刪除失敗，請稍後再試。"));
+      toast.error(toFriendlyError(msg, "Delete failed, please try again."));
     }
   }
 
@@ -269,7 +269,7 @@ export default function ImagesPage() {
             <input
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              placeholder="搜尋檔名、描述、標籤…"
+              placeholder="Search by filename, description, or tags…"
               className="w-full h-10 pl-9 pr-9 rounded-[10px] body-text text-[#1C1917] outline-none transition-all duration-[120ms]"
               style={{ background: "#FAF8F5", border: "1px solid rgba(0,0,0,0.12)" }}
               onFocus={(e) => {
@@ -316,7 +316,7 @@ export default function ImagesPage() {
         {/* Result count */}
         {!loadingList && (
           <p className="body-text text-[#78716C] mb-4">
-            {filtered.length} 張圖片
+            {filtered.length} image{filtered.length !== 1 ? "s" : ""}
           </p>
         )}
 
@@ -466,7 +466,7 @@ export default function ImagesPage() {
                       className="px-4 py-3 rounded-xl text-sm text-[#991B1B] mb-5"
                       style={{ background: "#FEE2E2", border: "1px solid rgba(153,27,27,0.12)" }}
                     >
-                      生成失敗：{activeJob.errorMessage ?? "此 Provider 尚未完成後端 API Key 設定，請聯絡系統管理者。"}
+                      Generation failed: {activeJob.errorMessage ?? "The API key for this provider is not configured. Please contact the system administrator."}
                     </div>
                   )}
 
@@ -487,7 +487,7 @@ export default function ImagesPage() {
                       value={captionDraft}
                       onChange={(e) => setCaptionDraft(e.target.value)}
                       rows={10}
-                      placeholder="描述內容…"
+                      placeholder="Description…"
                       className="w-full px-3 py-2.5 rounded-[10px] text-sm text-[#1C1917] resize-none outline-none transition-all duration-[120ms]"
                       style={{
                         background: "#F5F1EB",
@@ -594,7 +594,7 @@ export default function ImagesPage() {
                 )}
               >
                 <Trash2 className="w-4 h-4" />
-                {confirmDelete ? "確認刪除？" : "刪除"}
+                {confirmDelete ? "Confirm delete?" : "Delete"}
               </button>
               <button
                 type="button"
@@ -604,7 +604,7 @@ export default function ImagesPage() {
                 style={{ background: "#2C2825" }}
               >
                 {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                儲存
+                Save
               </button>
             </div>
           </div>

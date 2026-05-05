@@ -146,7 +146,7 @@ export default function DashboardHomePage() {
           <div className="px-5 py-4 border-b border-black/[0.06] flex items-center justify-between">
             <div>
               <h2 className="section-label uppercase text-[#78716C]">Recent Tasks</h2>
-              <p className="body-text text-[#78716C] mt-0.5">最近 10 筆任務</p>
+              <p className="body-text text-[#78716C] mt-0.5">Last 10 tasks</p>
             </div>
             <Link
               href="/dashboard/images"
@@ -169,12 +169,12 @@ export default function DashboardHomePage() {
           ) : recent.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <ImageIcon className="w-10 h-10 text-[#A8A29E]" />
-              <p className="text-sm text-[#78716C]">還沒有任務</p>
+              <p className="text-sm text-[#78716C]">No tasks yet</p>
               <Link
                 href="/dashboard/generate"
                 className="text-xs font-medium text-[#2C2825] hover:text-[#1A1714] underline underline-offset-2 transition-colors"
               >
-                上傳第一張圖片
+                Upload your first image
               </Link>
             </div>
           ) : (
@@ -211,7 +211,7 @@ export default function DashboardHomePage() {
                         style={{ fontFamily: "var(--font-geist-mono)" }}
                       >
                         {job.createdAt
-                          ? new Date(job.createdAt).toLocaleDateString("zh-TW", {
+                          ? new Date(job.createdAt).toLocaleDateString("en-US", {
                               month: "short",
                               day: "numeric",
                               hour: "2-digit",

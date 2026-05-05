@@ -22,7 +22,7 @@ export default function LoginPage() {
     e.preventDefault();
     if (loading) return;
     if (tab === "register" && Array.from(password).length < 8) {
-      const msg = `密碼至少需要 8 個字元（目前 ${Array.from(password).length}）。`;
+      const msg = `Password must be at least 8 characters (currently ${Array.from(password).length}).`;
       setError(msg);
       toast.error(msg);
       return;
@@ -39,7 +39,7 @@ export default function LoginPage() {
       if (!payload.ok) {
         const msg = toFriendlyError(
           payload.error,
-          tab === "signin" ? "登入失敗，請稍後再試。" : "註冊失敗，請稍後再試。",
+          tab === "signin" ? "Sign in failed, please try again." : "Registration failed, please try again.",
         );
         setError(msg);
         toast.error(msg);
@@ -47,7 +47,7 @@ export default function LoginPage() {
       }
       window.location.href = "/dashboard";
     } catch {
-      const msg = "服務暫時不可用，請稍後再試。";
+      const msg = "Service temporarily unavailable, please try again.";
       setError(msg);
       toast.error(msg);
     } finally {
@@ -107,7 +107,7 @@ export default function LoginPage() {
                     : { color: "#78716C" }
                 }
               >
-                {t === "signin" ? "登入" : "建立帳號"}
+                {t === "signin" ? "Sign in" : "Create account"}
               </button>
             ))}
           </div>
@@ -144,7 +144,7 @@ export default function LoginPage() {
             {/* Password */}
             <div>
               <label className="section-label block text-[#78716C] mb-1.5">
-                密碼
+                Password
               </label>
               <div className="relative">
                 <input
@@ -154,7 +154,7 @@ export default function LoginPage() {
                   minLength={8}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="至少 8 個字元"
+                  placeholder="At least 8 characters"
                    className="w-full h-10 pl-3 pr-10 rounded-[10px] body-text text-[#1C1917] outline-none transition-all duration-[120ms]"
                   style={{
                     background: "#F5F1EB",
@@ -211,7 +211,7 @@ export default function LoginPage() {
               }}
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {tab === "signin" ? "登入" : "建立帳號"}
+              {tab === "signin" ? "Sign in" : "Create account"}
             </button>
           </form>
 
@@ -221,7 +221,7 @@ export default function LoginPage() {
                 type="button"
                 className="section-label text-[#78716C] hover:text-[#1C1917] transition-colors"
               >
-                忘記密碼？
+                Forgot password?
               </button>
             </p>
           )}

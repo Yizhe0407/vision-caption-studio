@@ -25,36 +25,36 @@ const PROVIDERS: { id: Provider; label: string; description: string }[] = [
   {
     id: "OPENAI",
     label: "OpenAI",
-    description: "GPT-4o 及 GPT-4 Vision — 穩定、廣泛支援。",
+    description: "GPT-4o and GPT-4 Vision — stable, widely supported.",
   },
   {
     id: "GEMINI",
     label: "Gemini",
-    description: "Google Gemini Pro Vision — 強大圖像理解能力。",
+    description: "Google Gemini Pro Vision — powerful image understanding.",
   },
   {
     id: "CLAUDE",
     label: "Claude",
-    description: "Anthropic Claude 3 — 精準描述與推理能力。",
+    description: "Anthropic Claude 3 — precise description and reasoning.",
   },
   {
     id: "OPENROUTER",
     label: "OpenRouter",
-    description: "多模型閘道，支援 70+ 開放與私有模型。",
+    description: "Multi-model gateway supporting 70+ open and proprietary models.",
   },
   {
     id: "NVIDIA_NIM",
     label: "NVIDIA NIM",
-    description: "NVIDIA NIM 推理平台 — 高效能加速模型部署。",
+    description: "NVIDIA NIM inference platform — high-performance accelerated model deployment.",
   },
 ];
 
 const MODEL_PLACEHOLDERS: Record<Provider, string> = {
-  OPENAI: "例如 gpt-4.1-mini",
-  OPENROUTER: "例如 openai/gpt-4.1-mini",
-  GEMINI: "例如 gemini-2.5-flash",
-  NVIDIA_NIM: "例如 mistralai/mistral-large-3-675b-instruct-2512",
-  CLAUDE: "例如 claude-3-5-sonnet-latest",
+  OPENAI: "e.g. gpt-4.1-mini",
+  OPENROUTER: "e.g. openai/gpt-4.1-mini",
+  GEMINI: "e.g. gemini-2.5-flash",
+  NVIDIA_NIM: "e.g. mistralai/mistral-large-3-675b-instruct-2512",
+  CLAUDE: "e.g. claude-3-5-sonnet-latest",
 };
 
 function InputStyles() {
@@ -111,7 +111,7 @@ export default function ApiSettingsPage() {
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : undefined;
-      toast.error(toFriendlyError(msg, "無法讀取 API 設定。"));
+      toast.error(toFriendlyError(msg, "Failed to load API settings."));
     }
   }
 
@@ -137,11 +137,11 @@ export default function ApiSettingsPage() {
       });
       const data = (await res.json()) as { ok: boolean; error?: string };
       if (!data.ok) throw new Error(data.error);
-      toast.success("API 設定已更新。");
+      toast.success("API settings updated.");
       await fetchSettings();
     } catch (err) {
       const msg = err instanceof Error ? err.message : undefined;
-      toast.error(toFriendlyError(msg, "儲存失敗，請稍後再試。"));
+      toast.error(toFriendlyError(msg, "Save failed, please try again."));
     } finally {
       setSaving(false);
     }
@@ -151,7 +151,7 @@ export default function ApiSettingsPage() {
 
   async function onTest() {
     if (!isBackendKeyConfigured) {
-      toast.error("此 Provider 尚未完成後端 API Key 設定，請聯絡系統管理者。");
+      toast.error("The API key for this provider is not configured. Please contact the system administrator.");
       return;
     }
     setTesting(true);
@@ -167,7 +167,7 @@ export default function ApiSettingsPage() {
       });
       const data = (await res.json()) as { ok: boolean; error?: string };
       if (!data.ok) throw new Error(data.error ?? "Connection failed");
-      setTestResult({ status: "ok", message: "後端 API Key 與模型連線正常。" });
+      setTestResult({ status: "ok", message: "Backend API key and model connection successful." });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Connection failed";
       setTestResult({ status: "error", message: msg });
@@ -194,7 +194,7 @@ export default function ApiSettingsPage() {
         >
           <h2 className="section-label uppercase text-[#78716C] mb-1">AI Provider</h2>
           <p className="body-text text-[#78716C] mb-4">
-            選擇預設 Provider，後續生成任務會使用此設定。
+            Select the default provider. This setting will be used for future generation tasks.
           </p>
 
           {/* Segmented tabs */}
@@ -264,14 +264,14 @@ export default function ApiSettingsPage() {
             )}
             <span>
               {isBackendKeyConfigured
-                ? "後端已設定此 Provider 的 API Key。"
-                : "後端尚未設定此 Provider 的 API Key，儲存或生成前請由系統管理者更新環境變數。"}
+                ? "Backend API key is configured for this provider."
+                : "Backend API key is not configured for this provider. Please ask the system administrator to update the environment variables before saving or generating."}
             </span>
           </div>
 
           <div>
             <label className="section-label block mb-1.5 uppercase">
-              預設模型（Model）
+              Default Model
             </label>
             <input
               value={currentModel}
@@ -285,13 +285,13 @@ export default function ApiSettingsPage() {
               }}
             />
             <p className="section-label mt-1 text-[#A8A29E]">
-              未填寫時會使用系統預設模型；填寫後生成與測試都會使用你指定的模型。每個 Provider 獨立記憶。
+              Leave blank to use the system default model. When filled in, both generation and test will use the specified model. Each provider stores this independently.
             </p>
           </div>
 
           <div>
             <label className="section-label block mb-1.5 uppercase">
-              預設 Prompt Template
+              Default Prompt Template
             </label>
             <select
               value={preferredPromptTemplateId}

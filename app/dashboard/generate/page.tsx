@@ -44,7 +44,7 @@ type ApiError = { ok: false; error?: string };
 function formatTime(iso?: string) {
   if (!iso) return "";
   const d = new Date(iso);
-  return d.toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 }
 
 function getFileKey(file: File) {
@@ -82,7 +82,7 @@ const activeJob = useMemo(
       const data = (await res.json()) as { ok: true; jobs: JobItem[] } | ApiError;
       if (data.ok) setJobs(data.jobs ?? []);
     } catch {
-      if (!silent) toast.error("目前無法載入任務列表。");
+      if (!silent) toast.error("Unable to load task list.");
     }
   }, []);
 
@@ -95,7 +95,7 @@ const activeJob = useMemo(
       setImageDetail(data.image);
     } catch (err) {
       const msg = err instanceof Error ? err.message : undefined;
-      toast.error(toFriendlyError(msg, "無法載入圖片結果。"));
+      toast.error(toFriendlyError(msg, "Failed to load image result."));
     } finally {
       setDetailLoading(false);
     }
@@ -159,7 +159,7 @@ useEffect(() => {
   /* ── Upload ─────────────────────────────────────────── */
 
   async function onUpload() {
-    if (files.length === 0) { toast.error("請先選擇至少一張圖片。"); return; }
+    if (files.length === 0) { toast.error("Please select at least one image."); return; }
 
     setUploading(true);
     const form = new FormData();
@@ -169,12 +169,12 @@ useEffect(() => {
       const res = await fetch("/api/upload/batch", { method: "POST", body: form });
       const data = (await res.json()) as { ok: boolean; error?: string };
       if (!data.ok) throw new Error(data.error);
-      toast.success(`${files.length} 張圖片已排入生成佇列。`);
+      toast.success(`${files.length} image${files.length !== 1 ? "s" : ""} queued for generation.`);
       setFiles([]);
       await fetchJobs(true);
     } catch (err) {
       const msg = err instanceof Error ? err.message : undefined;
-      toast.error(toFriendlyError(msg, "上傳失敗，請稍後再試。"));
+      toast.error(toFriendlyError(msg, "Upload failed, please try again."));
     } finally {
       setUploading(false);
     }
@@ -240,7 +240,7 @@ useEffect(() => {
               Drop images here or click to browse
             </p>
             <p className="section-label mt-1 text-[#A8A29E]">
-              PNG, JPG, WebP · 最大 20MB
+              PNG, JPG, WebP · Max 20MB
             </p>
           </div>
 
@@ -280,7 +280,7 @@ useEffect(() => {
               }}
             >
               {uploading && <Loader2 className="w-4 h-4 animate-spin" />}
-              上傳 {files.length} 張圖片
+              Upload {files.length} image{files.length !== 1 ? "s" : ""}
             </button>
           )}
 
@@ -304,8 +304,8 @@ useEffect(() => {
           {jobs.length === 0 ? (
             <div className="flex flex-col items-center py-12 gap-2 text-center px-4">
               <ImageIcon className="w-8 h-8 text-[#A8A29E]" />
-              <p className="text-sm text-[#78716C]">還沒有任務</p>
-              <p className="text-xs text-[#A8A29E]">上傳圖片後會在此顯示</p>
+              <p className="text-sm text-[#78716C]">No tasks yet</p>
+              <p className="text-xs text-[#A8A29E]">Tasks will appear here after uploading</p>
             </div>
           ) : (
             <div className="px-2 pb-4 space-y-0.5">
@@ -373,7 +373,7 @@ useEffect(() => {
                   Select a task to view details
                 </p>
                 <p className="body-text text-[#78716C] mt-1">
-                  點選左側任務查看原圖、描述與標籤
+                  Select a task on the left to view the image, description, and tags
                 </p>
               </div>
             </div>
@@ -411,7 +411,7 @@ useEffect(() => {
               className="px-4 py-3 rounded-xl body-text text-[#991B1B]"
               style={{ background: "#FEE2E2", border: "1px solid rgba(153,27,27,0.12)" }}
             >
-              生成失敗：{toFriendlyError(activeJob.errorMessage ?? undefined, "請檢查 API Key 或模型設定。")}
+              Generation failed: {toFriendlyError(activeJob.errorMessage ?? undefined, "Please check your API key or model settings.")}
             </div>
           )}
 
@@ -431,8 +431,8 @@ useEffect(() => {
                 {imageDetail?.captions[0]?.content ?? (
                   <span className="text-[#A8A29E]">
                     {activeJob?.status === "QUEUED" || activeJob?.status === "PROCESSING"
-                      ? "生成中，請稍候…"
-                      : "（尚未生成）"}
+                      ? "Generating, please wait…"
+                      : "(not yet generated)"}
                   </span>
                 )}
               </p>
@@ -501,8 +501,8 @@ useEffect(() => {
             ) : (
               <p className="body-text text-[#A8A29E]">
                 {activeJob?.status === "QUEUED" || activeJob?.status === "PROCESSING"
-                  ? "生成中…"
-                  : "（無結構化標籤）"}
+                  ? "Generating…"
+                  : "(no structured tags)"}
               </p>
             )}
           </div>

@@ -17,7 +17,7 @@ type UserItem = {
 type ApiError = { ok: false; error?: string };
 
 function roleLabel(role: UserRole) {
-  return role === "ADMIN" ? "管理員" : "一般使用者";
+  return role === "ADMIN" ? "Admin" : "User";
 }
 
 export function AdminUsersManagement() {
@@ -43,7 +43,7 @@ export function AdminUsersManagement() {
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : undefined;
-      toast.error(toFriendlyError(msg, "無法載入使用者清單。"));
+      toast.error(toFriendlyError(msg, "Failed to load user list."));
     } finally {
       setLoading(false);
     }
@@ -65,11 +65,11 @@ export function AdminUsersManagement() {
       if (!data.ok) {
         throw new Error(data.error);
       }
-      toast.success("使用者角色已更新。");
+      toast.success("User role updated.");
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: data.user.role } : u)));
     } catch (err) {
       const msg = err instanceof Error ? err.message : undefined;
-      toast.error(toFriendlyError(msg, "更新角色失敗，請稍後再試。"));
+      toast.error(toFriendlyError(msg, "Failed to update role, please try again."));
     } finally {
       setSavingUserId(null);
     }
@@ -87,8 +87,8 @@ export function AdminUsersManagement() {
           }}
         >
           <div className="px-5 py-4 border-b border-black/[0.06]">
-            <h2 className="section-label uppercase text-[#78716C]">使用者管理</h2>
-            <p className="body-text text-[#78716C] mt-0.5">可調整使用者角色（ADMIN / USER）</p>
+            <h2 className="section-label uppercase text-[#78716C]">User Management</h2>
+            <p className="body-text text-[#78716C] mt-0.5">Manage user roles (ADMIN / USER)</p>
           </div>
 
           {loading ? (
@@ -96,15 +96,15 @@ export function AdminUsersManagement() {
               <Loader2 className="w-5 h-5 text-[#A8A29E] animate-spin" />
             </div>
           ) : users.length === 0 ? (
-            <div className="px-5 py-12 text-center text-sm text-[#78716C]">尚無使用者資料</div>
+            <div className="px-5 py-12 text-center text-sm text-[#78716C]">No users found</div>
           ) : (
             <table className="w-full">
               <thead>
                 <tr className="border-b border-black/[0.06]">
                   <th className="px-5 py-3 text-left section-label uppercase">Email</th>
-                  <th className="px-5 py-3 text-left section-label uppercase">角色</th>
-                  <th className="px-5 py-3 text-left section-label uppercase">建立時間</th>
-                  <th className="px-5 py-3 text-left section-label uppercase">操作</th>
+                  <th className="px-5 py-3 text-left section-label uppercase">Role</th>
+                  <th className="px-5 py-3 text-left section-label uppercase">Created At</th>
+                  <th className="px-5 py-3 text-left section-label uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -140,7 +140,7 @@ export function AdminUsersManagement() {
                         </span>
                       </td>
                       <td className="px-5 py-3 body-text text-[#78716C]">
-                        {new Date(user.createdAt).toLocaleString("zh-TW", {
+                        {new Date(user.createdAt).toLocaleString("en-US", {
                           month: "short",
                           day: "numeric",
                           hour: "2-digit",
@@ -154,7 +154,7 @@ export function AdminUsersManagement() {
                           onClick={() => onChangeRole(user.id, nextRole)}
                            className="h-8 px-3 rounded-[10px] section-label text-[#1C1917] border border-black/[0.08] hover:bg-[#EDE8DF] transition-colors disabled:opacity-60"
                         >
-                          {saving ? "更新中..." : isCurrentUser ? `切換為${roleLabel(nextRole)}（自己）` : `切換為${roleLabel(nextRole)}`}
+                          {saving ? "Updating..." : isCurrentUser ? `Switch to ${roleLabel(nextRole)} (you)` : `Switch to ${roleLabel(nextRole)}`}
                         </button>
                       </td>
                     </tr>
