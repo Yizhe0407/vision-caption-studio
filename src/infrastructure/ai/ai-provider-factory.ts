@@ -62,6 +62,23 @@ export class AIProviderFactory {
           new OpenAI({
             apiKey,
             baseURL: "https://integrate.api.nvidia.com/v1",
+            fetch: async (url, init) => {
+              const res = await globalThis.fetch(url, init);
+              if (!res.ok) {
+                const raw = await res.text();
+                try {
+                  const problem = JSON.parse(raw) as { detail?: string; title?: string };
+                  const message = problem.detail ?? problem.title ?? raw;
+                  return new Response(JSON.stringify({ error: { message, type: "invalid_request_error" } }), {
+                    status: res.status,
+                    headers: new Headers({ "content-type": "application/json" }),
+                  });
+                } catch {
+                  return new Response(raw, { status: res.status, headers: res.headers });
+                }
+              }
+              return res;
+            },
           }),
         );
       default:
