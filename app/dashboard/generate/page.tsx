@@ -475,7 +475,6 @@ useEffect(() => {
                   { label: "Details",          values: imageDetail.structuredTags.details },
                   { label: "Mood",             values: imageDetail.structuredTags.mood },
                 ]
-                  .filter((row) => row.values.length > 0)
                   .map((row) => (
                     <div key={row.label}>
                       <p
