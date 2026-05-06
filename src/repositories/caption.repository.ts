@@ -24,7 +24,7 @@ export class CaptionRepository {
 
     return prisma.caption.update({
       where: { id: latest.id },
-      data: { content },
+      data: { content, structuredTags: Prisma.DbNull },
     });
   }
 }
