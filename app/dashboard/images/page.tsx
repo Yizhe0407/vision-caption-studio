@@ -530,7 +530,6 @@ export default function ImagesPage() {
                         { label: "Details", values: structuredTags.details },
                         { label: "Mood", values: structuredTags.mood },
                       ]
-                        .filter((row) => row.values.length > 0)
                         .map((row) => (
                           <div key={row.label}>
                             <p
