@@ -40,8 +40,9 @@ export class ImageController {
       .object({
         id: z.string().min(1),
         userId: z.string().min(1),
-        caption: z.string().min(1),
+        caption: z.string().min(1).optional(),
         tags: z.array(z.string()).default([]),
+        structuredTags: z.unknown().optional(),
       })
       .parse(payload);
 
@@ -50,27 +51,35 @@ export class ImageController {
       throw new Error("Image not found.");
     }
 
-    try {
-      await this.captions.updateLatestForImage(parsed.id, parsed.caption.trim());
-    } catch {
-      const user = await this.users.findById(parsed.userId);
-      if (!user) {
-        throw new Error("User not found.");
+    if (parsed.caption !== undefined) {
+      try {
+        await this.captions.updateLatestForImage(parsed.id, parsed.caption.trim());
+      } catch {
+        const user = await this.users.findById(parsed.userId);
+        if (!user) {
+          throw new Error("User not found.");
+        }
+        const promptTemplate =
+          (user.preferredPromptTemplateId &&
+            (await this.prompts.getActiveById("CAPTION", user.preferredPromptTemplateId, parsed.userId))) ||
+          (await this.prompts.getLatestActive("CAPTION", parsed.userId));
+        if (!promptTemplate) {
+          throw new Error("Prompt template not found.");
+        }
+        const request = await this.aiRequests.createManualSucceeded({
+          provider: user.preferredProvider,
+          promptTemplateId: promptTemplate.id,
+        });
+        await this.captions.create(parsed.id, request.id, parsed.caption.trim());
       }
-      const promptTemplate =
-        (user.preferredPromptTemplateId &&
-          (await this.prompts.getActiveById("CAPTION", user.preferredPromptTemplateId, parsed.userId))) ||
-        (await this.prompts.getLatestActive("CAPTION", parsed.userId));
-      if (!promptTemplate) {
-        throw new Error("Prompt template not found.");
-      }
-      const request = await this.aiRequests.createManualSucceeded({
-        provider: user.preferredProvider,
-        promptTemplateId: promptTemplate.id,
-      });
-      await this.captions.create(parsed.id, request.id, parsed.caption.trim());
+      await this.tags.replaceTagsForImage(parsed.id, parsed.tags);
     }
-    await this.tags.replaceTagsForImage(parsed.id, parsed.tags);
+
+    if (parsed.structuredTags !== undefined) {
+      await this.captions.updateStructuredTagsForImage(parsed.id, parsed.structuredTags).catch(() => {
+        /* no caption to attach structured tags to — skip */
+      });
+    }
   }
 
   async remove(payload: unknown) {

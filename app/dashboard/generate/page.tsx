@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ImageIcon, Loader2, UploadCloud } from "lucide-react";
+import { ImageIcon, Loader2, UploadCloud, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { StatusBadge } from "@/src/components/ui/status-badge";
 import { toFriendlyError } from "@/src/lib/friendly-error";
@@ -51,6 +51,154 @@ function getFileKey(file: File) {
   return `${file.name}::${file.size}::${file.lastModified}::${file.type}`;
 }
 
+const EMPTY_STRUCTURED_TAGS: StructuredTags = {
+  category: "",
+  product_type: "",
+  shape: "",
+  material: [],
+  texture: [],
+  pattern: [],
+  pattern_layout: "",
+  technique: [],
+  color: { primary: [], secondary: [], accent: [] },
+  style: [],
+  details: [],
+  mood: [],
+};
+
+function buildTagRows(
+  draft: StructuredTags,
+  onChange: (next: StructuredTags) => void,
+): Array<{ label: string; values: string[]; onChange: (v: string[]) => void; maxItems?: number }> {
+  const set = (key: keyof StructuredTags, val: unknown) =>
+    onChange({ ...draft, [key]: val } as StructuredTags);
+
+  return [
+    { label: "Category",          values: draft.category       ? [draft.category]       : [], onChange: (v) => set("category",       v[0] ?? ""), maxItems: 1 },
+    { label: "Product Type",      values: draft.product_type   ? [draft.product_type]   : [], onChange: (v) => set("product_type",   v[0] ?? ""), maxItems: 1 },
+    { label: "Shape",             values: draft.shape          ? [draft.shape]          : [], onChange: (v) => set("shape",          v[0] ?? ""), maxItems: 1 },
+    { label: "Color (Primary)",   values: draft.color.primary,                                onChange: (v) => onChange({ ...draft, color: { ...draft.color, primary:   v } }) },
+    { label: "Color (Secondary)", values: draft.color.secondary,                              onChange: (v) => onChange({ ...draft, color: { ...draft.color, secondary: v } }) },
+    { label: "Color (Accent)",    values: draft.color.accent,                                 onChange: (v) => onChange({ ...draft, color: { ...draft.color, accent:    v } }) },
+    { label: "Material",          values: draft.material,                                     onChange: (v) => set("material",        v) },
+    { label: "Texture",           values: draft.texture,                                      onChange: (v) => set("texture",         v) },
+    { label: "Pattern",           values: draft.pattern,                                      onChange: (v) => set("pattern",         v) },
+    { label: "Pattern Layout",    values: draft.pattern_layout ? [draft.pattern_layout] : [], onChange: (v) => set("pattern_layout",  v[0] ?? ""), maxItems: 1 },
+    { label: "Technique",         values: draft.technique,                                    onChange: (v) => set("technique",       v) },
+    { label: "Style",             values: draft.style,                                        onChange: (v) => set("style",           v) },
+    { label: "Details",           values: draft.details,                                      onChange: (v) => set("details",         v) },
+    { label: "Mood",              values: draft.mood,                                         onChange: (v) => set("mood",            v) },
+  ];
+}
+
+function ChipList({
+  values,
+  onChange,
+  maxItems,
+}: {
+  values: string[];
+  onChange: (v: string[]) => void;
+  maxItems?: number;
+}) {
+  const [input, setInput] = useState("");
+  const [editIdx, setEditIdx] = useState<number | null>(null);
+  const [editVal, setEditVal] = useState("");
+
+  const limit = maxItems ?? Infinity;
+
+  function add() {
+    const v = input.trim();
+    if (!v || values.length >= limit || values.includes(v)) return;
+    onChange([...values, v]);
+    setInput("");
+  }
+
+  function remove(i: number) {
+    onChange(values.filter((_, idx) => idx !== i));
+  }
+
+  function startEdit(i: number) {
+    setEditIdx(i);
+    setEditVal(values[i]);
+  }
+
+  function commitEdit() {
+    if (editIdx === null) return;
+    const v = editVal.trim();
+    if (v) {
+      const next = [...values];
+      next[editIdx] = v;
+      onChange(next);
+    }
+    setEditIdx(null);
+  }
+
+  return (
+    <div className="space-y-1">
+      {values.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {values.map((v, i) =>
+            editIdx === i ? (
+              <input
+                key={i}
+                autoFocus
+                value={editVal}
+                onChange={(e) => setEditVal(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); commitEdit(); }
+                  if (e.key === "Escape") setEditIdx(null);
+                }}
+                onBlur={commitEdit}
+                className="px-2 py-0.5 rounded-full text-xs font-medium outline-none"
+                style={{
+                  background: "#EDE8DF",
+                  color: "#1C1917",
+                  border: "1px solid #2C2825",
+                  boxShadow: "0 0 0 2px rgba(44,40,37,0.1)",
+                  minWidth: 40,
+                  maxWidth: 120,
+                }}
+              />
+            ) : (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                style={{ background: "#EDE8DF", color: "#1C1917", border: "1px solid rgba(0,0,0,0.08)" }}
+              >
+                <button
+                  type="button"
+                  onClick={() => startEdit(i)}
+                  className="hover:text-[#D97757] transition-colors"
+                >
+                  {v}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => remove(i)}
+                  className="text-[#A8A29E] hover:text-[#B45050] transition-colors ml-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )
+          )}
+        </div>
+      )}
+      {values.length < limit && (
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
+          placeholder="Add…"
+          className="w-full h-7 px-2 rounded-md text-xs text-[#1C1917] outline-none transition-colors"
+          style={{ background: "#F5F1EB", border: "1px solid rgba(0,0,0,0.10)" }}
+          onFocus={(e) => { e.target.style.borderColor = "#2C2825"; }}
+          onBlur={(e) => { e.target.style.borderColor = "rgba(0,0,0,0.10)"; }}
+        />
+      )}
+    </div>
+  );
+}
 
 export default function GeneratePage() {
   const fileInputRef             = useRef<HTMLInputElement>(null);
@@ -61,6 +209,8 @@ export default function GeneratePage() {
   const [imageDetail, setImageDetail] = useState<ImageDetail | null>(null);
   const [uploading, setUploading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [structuredTagsDraft, setStructuredTagsDraft] = useState<StructuredTags | null>(null);
+  const [savingTags, setSavingTags] = useState(false);
 
 const activeJob = useMemo(
     () => jobs.find((j) => j.id === activeJobId) ?? null,
@@ -134,6 +284,16 @@ useEffect(() => {
     setImageDetail(null);
   }, [activeJobId, activeImageId, activeJobStatus, fetchImageDetail]);
 
+  useEffect(() => {
+    if (imageDetail) {
+      setStructuredTagsDraft(
+        imageDetail.structuredTags ?? { ...EMPTY_STRUCTURED_TAGS, color: { ...EMPTY_STRUCTURED_TAGS.color } },
+      );
+    } else {
+      setStructuredTagsDraft(null);
+    }
+  }, [imageDetail]);
+
   /* ── File handling ─────────────────────────────────── */
 
   function handleFiles(incoming: FileList | null) {
@@ -181,6 +341,27 @@ useEffect(() => {
   }
 
   /* ── Select job ─────────────────────────────────────── */
+
+  async function onSaveStructuredTags() {
+    if (!imageDetail || !structuredTagsDraft) return;
+    setSavingTags(true);
+    try {
+      const res = await fetch(`/api/images/${imageDetail.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ structuredTags: structuredTagsDraft }),
+      });
+      const data = (await res.json()) as { ok: boolean; error?: string };
+      if (!data.ok) throw new Error(data.error);
+      toast.success("Structured tags saved.");
+      setImageDetail((prev) => (prev ? { ...prev, structuredTags: structuredTagsDraft } : prev));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : undefined;
+      toast.error(toFriendlyError(msg, "Save failed, please try again."));
+    } finally {
+      setSavingTags(false);
+    }
+  }
 
   function selectJob(job: JobItem) {
     setActiveJobId(job.id);
@@ -457,25 +638,10 @@ useEffect(() => {
                   </div>
                 ))}
               </div>
-            ) : imageDetail?.structuredTags ? (
-              <div className="space-y-3">
-                {[
-                  { label: "Category",         values: imageDetail.structuredTags.category ? [imageDetail.structuredTags.category] : [] },
-                  { label: "Product Type",     values: imageDetail.structuredTags.product_type ? [imageDetail.structuredTags.product_type] : [] },
-                  { label: "Shape",            values: imageDetail.structuredTags.shape ? [imageDetail.structuredTags.shape] : [] },
-                  { label: "Color (Primary)",  values: imageDetail.structuredTags.color.primary },
-                  { label: "Color (Secondary)",values: imageDetail.structuredTags.color.secondary },
-                  { label: "Color (Accent)",   values: imageDetail.structuredTags.color.accent },
-                  { label: "Material",         values: imageDetail.structuredTags.material },
-                  { label: "Texture",          values: imageDetail.structuredTags.texture },
-                  { label: "Pattern",          values: imageDetail.structuredTags.pattern },
-                  { label: "Pattern Layout",   values: imageDetail.structuredTags.pattern_layout ? [imageDetail.structuredTags.pattern_layout] : [] },
-                  { label: "Technique",        values: imageDetail.structuredTags.technique },
-                  { label: "Style",            values: imageDetail.structuredTags.style },
-                  { label: "Details",          values: imageDetail.structuredTags.details },
-                  { label: "Mood",             values: imageDetail.structuredTags.mood },
-                ]
-                  .map((row) => (
+            ) : structuredTagsDraft ? (
+              <>
+                <div className="space-y-3">
+                  {buildTagRows(structuredTagsDraft, (next) => setStructuredTagsDraft(next)).map((row) => (
                     <div key={row.label}>
                       <p
                         className="mb-1"
@@ -483,20 +649,27 @@ useEffect(() => {
                       >
                         {row.label}
                       </p>
-                      <div className="flex flex-wrap gap-1">
-                        {row.values.map((v) => (
-                          <span
-                            key={v}
-                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                            style={{ background: "#EDE8DF", color: "#1C1917", border: "1px solid rgba(0,0,0,0.08)" }}
-                          >
-                            {v}
-                          </span>
-                        ))}
-                      </div>
+                      <ChipList
+                        values={row.values}
+                        onChange={row.onChange}
+                        maxItems={row.maxItems}
+                      />
                     </div>
                   ))}
-              </div>
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={onSaveStructuredTags}
+                    disabled={savingTags}
+                    className="h-8 min-w-[80px] rounded-[10px] text-xs font-medium text-[#FAF8F5] flex items-center justify-center gap-1.5 transition-all duration-[120ms] disabled:opacity-50"
+                    style={{ background: "#2C2825" }}
+                  >
+                    {savingTags && <Loader2 className="w-3 h-3 animate-spin" />}
+                    Save Tags
+                  </button>
+                </div>
+              </>
             ) : (
               <p className="body-text text-[#A8A29E]">
                 {activeJob?.status === "QUEUED" || activeJob?.status === "PROCESSING"

@@ -26,12 +26,13 @@ export async function PATCH(req: Request, { params }: Params) {
   try {
     const user = await requireAuthUser();
     const { id } = await params;
-    const payload = (await req.json()) as { caption?: string; tags?: string[] };
+    const payload = (await req.json()) as { caption?: string; tags?: string[]; structuredTags?: unknown };
     await container.imageController.updateManual({
       id,
       userId: user.userId,
       caption: payload.caption,
       tags: payload.tags ?? [],
+      structuredTags: payload.structuredTags,
     });
     return NextResponse.json({ ok: true });
   } catch (error) {
