@@ -8,7 +8,6 @@ import {
   FileText,
   Home,
   LogOut,
-  Settings2,
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
@@ -46,7 +45,6 @@ function buildNavGroups(isAdmin: boolean): NavGroup[] {
       label: "Configure",
       items: [
         { href: "/dashboard/prompt-templates", label: "Prompt Templates", icon: FileText, exact: false },
-        { href: "/dashboard/settings/api", label: "API Settings", icon: Settings2, exact: false },
         ...(isAdmin
           ? [{ href: "/dashboard/admin/users", label: "User Management", icon: ShieldCheck, exact: false }]
           : []),
@@ -135,7 +133,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       window.location.href = "/login";
     } catch (err) {
       const msg = err instanceof Error ? err.message : undefined;
-      toast.error(toFriendlyError(msg, "登出失敗，請稍後再試。"));
+      toast.error(toFriendlyError(msg, "Logout failed, please try again."));
     }
   }
 
@@ -212,7 +210,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <div className="mb-2 rounded-lg px-2 py-1.5">
               <p className="truncate text-[12px] text-[#1C1917]">{email ?? "-"}</p>
               <p className="mt-0.5 text-[10px] text-[#A8A29E]">
-                {role === "ADMIN" ? "管理員" : "一般使用者"}
+                {role === "ADMIN" ? "Admin" : "User"}
               </p>
             </div>
             <button
@@ -221,7 +219,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-xs text-[#B45050] transition-colors hover:bg-[rgba(180,80,80,0.06)]"
             >
               <LogOut className="h-3.5 w-3.5" />
-              登出
+              Log out
             </button>
           </SidebarFooter>
         </Sidebar>

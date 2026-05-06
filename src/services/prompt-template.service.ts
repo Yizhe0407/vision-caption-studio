@@ -1,21 +1,53 @@
 import { PromptTemplateRepository } from "@/src/repositories/prompt-template.repository";
 
-export const DEFAULT_TEMPLATE_CONTENT = `Analyze this product image and generate:
+export const DEFAULT_TEMPLATE_CONTENT = `Analyze this product image and generate a product description and structured semantic tags.
 
-1. A detailed description (2-3 sentences) highlighting:
-   - Product type and category
-   - Key visual features
-   - Quality and style
+Return only valid JSON. Do not include markdown, comments, or extra text.
 
-2. Relevant tags (5-10) for:
-   - Product attributes
-   - Style keywords
-   - Search optimization
+Task:
+1. Write a detailed product description in 2-3 sentences.
+   Include:
+   - Product category and product type
+   - Key visible features
+   - Shape, materials, textures, patterns, colors, and details when visible
+   - Overall visual style and mood when clearly supported by the image
 
-Output format:
+2. Generate structured tags using the exact JSON schema below.
+
+Rules:
+- Use lowercase English values only.
+- Use hyphenated values for multi-word terms, for example graphic-print, slim-fit, cool-toned.
+- Only describe what is visible or strongly inferable from the image.
+- Do not invent brand names, prices, origin, gender, age group, or hidden materials.
+- If a field is unknown or not applicable, use an empty string "" for string fields and an empty array [] for array fields.
+- Do not use ambiguous bare words. Put each value into the correct semantic field.
+- Use color.primary, color.secondary, and color.accent only for physical colors.
+- Use mood only for emotional tone or atmosphere.
+- Use style only for design, fashion, or commercial visual style.
+- Keep array fields concise. Prefer 1-5 high-confidence values.
+- Return the same keys every time. Do not add, remove, or rename keys.
+
+Output JSON schema:
 {
   "description": "...",
-  "tags": ["tag1", "tag2", ...]
+  "tags": {
+    "category": "",
+    "product_type": "",
+    "shape": "",
+    "material": [],
+    "texture": [],
+    "pattern": [],
+    "pattern_layout": "",
+    "technique": [],
+    "color": {
+      "primary": [],
+      "secondary": [],
+      "accent": []
+    },
+    "style": [],
+    "details": [],
+    "mood": []
+  }
 }`;
 
 export class PromptTemplateService {
@@ -66,11 +98,11 @@ export class PromptTemplateService {
     }
     const total = await this.templates.countAll(userId);
     if (total <= 1) {
-      throw new Error("至少需要保留一個 Prompt Template。");
+      throw new Error("At least one prompt template must be kept.");
     }
     const usedCount = await this.templates.countAIRequests(id);
     if (usedCount > 0) {
-      throw new Error("此 Prompt Template 已被歷史任務使用，無法刪除。");
+      throw new Error("This prompt template has been used in tasks and cannot be deleted.");
     }
     return this.templates.deleteById(id, userId);
   }

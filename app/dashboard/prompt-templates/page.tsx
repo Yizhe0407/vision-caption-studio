@@ -21,7 +21,7 @@ type ApiError = { ok: false; error?: string };
 
 function formatDate(iso?: string) {
   if (!iso) return "";
-  return new Date(iso).toLocaleDateString("zh-TW", {
+  return new Date(iso).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
   });
@@ -62,7 +62,7 @@ export default function PromptTemplatesPage() {
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : undefined;
-      toast.error(toFriendlyError(msg, "無法載入 Prompt Template。"));
+      toast.error(toFriendlyError(msg, "Failed to load prompt templates."));
     } finally {
       setLoading(false);
     }
@@ -83,7 +83,7 @@ export default function PromptTemplatesPage() {
   async function onSave() {
     if (!activeTemplate) return;
     if (name.trim().length === 0) {
-      toast.error("Prompt Title 不能為空白。");
+      toast.error("Prompt title cannot be empty.");
       return;
     }
     setSaving(true);
@@ -95,11 +95,11 @@ export default function PromptTemplatesPage() {
       });
       const data = (await res.json()) as { ok: boolean; error?: string };
       if (!data.ok) throw new Error(data.error);
-      toast.success("Prompt Template 已更新。");
+      toast.success("Prompt template updated.");
       await fetchTemplates();
     } catch (err) {
       const msg = err instanceof Error ? err.message : undefined;
-      toast.error(toFriendlyError(msg, "更新失敗，請稍後再試。"));
+      toast.error(toFriendlyError(msg, "Update failed, please try again."));
     } finally {
       setSaving(false);
     }
@@ -120,12 +120,12 @@ export default function PromptTemplatesPage() {
       });
       const data = (await res.json()) as { ok: boolean; error?: string; template?: Template };
       if (!data.ok || !data.template) throw new Error(data.error);
-      toast.success(mode === "copy" ? "已複製目前內容為新版本。" : "已新增空白版本。");
+      toast.success(mode === "copy" ? "Copied content as a new version." : "Added a blank version.");
       setActiveId(data.template.id);
       await fetchTemplates();
     } catch (err) {
       const msg = err instanceof Error ? err.message : undefined;
-      toast.error(toFriendlyError(msg, "新增失敗，請稍後再試。"));
+      toast.error(toFriendlyError(msg, "Failed to add, please try again."));
     } finally {
       setCreating(false);
     }
@@ -140,13 +140,13 @@ export default function PromptTemplatesPage() {
       });
       const data = (await res.json()) as { ok: boolean; error?: string };
       if (!data.ok) throw new Error(data.error);
-      toast.success("Prompt Template 已刪除。");
+      toast.success("Prompt template deleted.");
       const remaining = templates.filter((t) => t.id !== activeTemplate.id);
       setActiveId(remaining[0]?.id ?? null);
       await fetchTemplates();
     } catch (err) {
       const msg = err instanceof Error ? err.message : undefined;
-      toast.error(toFriendlyError(msg, "刪除失敗，至少需保留一個 Prompt。"));
+      toast.error(toFriendlyError(msg, "Delete failed — at least one template must be kept."));
     } finally {
       setDeleting(false);
     }
@@ -231,7 +231,7 @@ export default function PromptTemplatesPage() {
                 style={{ borderColor: "rgba(0,0,0,0.15)" }}
               >
                 {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                新增新版本（空白）
+                Add new version (blank)
               </button>
             </div>
           </div>
@@ -297,7 +297,7 @@ export default function PromptTemplatesPage() {
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     className="w-full h-full resize-none body-text text-[#1C1917] rounded-xl px-4 py-3 outline-none transition-all duration-[120ms]"
-                    placeholder="輸入 Prompt 內容…&#10;&#10;可使用 {{filename}}, {{tags}} 等變數"
+                    placeholder="Enter prompt content…&#10;&#10;Variables available: {{filename}}, {{tags}}, etc."
                     style={{
                       background: "#FFFFFF",
                       border: "1px solid rgba(0,0,0,0.12)",
@@ -328,7 +328,7 @@ export default function PromptTemplatesPage() {
                     style={{ background: "#2C2825", boxShadow: "0 1px 3px rgba(28,25,23,0.20)" }}
                   >
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    儲存
+                    Save
                   </button>
 
                   <button
@@ -339,7 +339,7 @@ export default function PromptTemplatesPage() {
                     style={{ background: "#EDE8DF", borderColor: "rgba(0,0,0,0.07)" }}
                   >
                     {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                    複製目前內容成新版本
+                    Duplicate as new version
                   </button>
 
                   <div className="flex-1" />
@@ -356,7 +356,7 @@ export default function PromptTemplatesPage() {
                       )}
                     >
                       {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                      刪除
+                      Delete
                     </button>
 
                     {(!canDelete || usedInTasks) && (

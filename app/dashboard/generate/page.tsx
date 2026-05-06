@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ImageIcon, Loader2, Tag, UploadCloud } from "lucide-react";
+import { ImageIcon, Loader2, UploadCloud } from "lucide-react";
 import toast from "react-hot-toast";
 import { StatusBadge } from "@/src/components/ui/status-badge";
 import { toFriendlyError } from "@/src/lib/friendly-error";
@@ -15,12 +15,28 @@ type JobItem = {
   image: { id: string; originalFilename: string };
 };
 
+type StructuredTags = {
+  category: string;
+  product_type: string;
+  shape: string;
+  material: string[];
+  texture: string[];
+  pattern: string[];
+  pattern_layout: string;
+  technique: string[];
+  color: { primary: string[]; secondary: string[]; accent: string[] };
+  style: string[];
+  details: string[];
+  mood: string[];
+};
+
 type ImageDetail = {
   id: string;
   originalFilename: string;
   imageUrl: string;
   captions: Array<{ id: string; content: string }>;
   tags: Array<{ tag: { name: string } }>;
+  structuredTags: StructuredTags | null;
 };
 
 type ApiError = { ok: false; error?: string };
@@ -28,7 +44,7 @@ type ApiError = { ok: false; error?: string };
 function formatTime(iso?: string) {
   if (!iso) return "";
   const d = new Date(iso);
-  return d.toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 }
 
 function getFileKey(file: File) {
@@ -40,8 +56,6 @@ export default function GeneratePage() {
   const fileInputRef             = useRef<HTMLInputElement>(null);
   const [files, setFiles]        = useState<File[]>([]);
   const [dragOver, setDragOver]  = useState(false);
-  const [provider, setProvider]  = useState<string>("OPENAI");
-  const [providerReady, setProviderReady] = useState(false);
   const [jobs, setJobs]          = useState<JobItem[]>([]);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [imageDetail, setImageDetail] = useState<ImageDetail | null>(null);
@@ -68,7 +82,7 @@ const activeJob = useMemo(
       const data = (await res.json()) as { ok: true; jobs: JobItem[] } | ApiError;
       if (data.ok) setJobs(data.jobs ?? []);
     } catch {
-      if (!silent) toast.error("目前無法載入任務列表。");
+      if (!silent) toast.error("Unable to load task list.");
     }
   }, []);
 
@@ -81,7 +95,7 @@ const activeJob = useMemo(
       setImageDetail(data.image);
     } catch (err) {
       const msg = err instanceof Error ? err.message : undefined;
-      toast.error(toFriendlyError(msg, "無法載入圖片結果。"));
+      toast.error(toFriendlyError(msg, "Failed to load image result."));
     } finally {
       setDetailLoading(false);
     }
@@ -103,25 +117,9 @@ const previewItems = useMemo(
     };
   }, [previewItems]);
 
-  async function fetchSettings() {
-    try {
-      const res = await fetch("/api/settings/api-keys");
-      const data = (await res.json()) as
-        | { ok: true; settings: { preferredProvider: string } }
-        | ApiError;
-      if (data.ok) {
-        setProvider(data.settings.preferredProvider);
-        setProviderReady(true);
-      }
-    } catch {
-      // non-critical
-    }
-  }
-
   /* ── Effects ───────────────────────────────────────── */
 
   useEffect(() => {
-    void fetchSettings();
     void fetchJobs();
     const timer = setInterval(() => void fetchJobs(), 3000);
     return () => clearInterval(timer);
@@ -161,24 +159,22 @@ useEffect(() => {
   /* ── Upload ─────────────────────────────────────────── */
 
   async function onUpload() {
-    if (files.length === 0) { toast.error("請先選擇至少一張圖片。"); return; }
-    if (!providerReady)     { toast.error("尚未讀取 API 設定，請稍後再試。"); return; }
+    if (files.length === 0) { toast.error("Please select at least one image."); return; }
 
     setUploading(true);
     const form = new FormData();
     files.forEach((f) => form.append("files", f));
-    form.append("provider", provider);
 
     try {
       const res = await fetch("/api/upload/batch", { method: "POST", body: form });
       const data = (await res.json()) as { ok: boolean; error?: string };
       if (!data.ok) throw new Error(data.error);
-      toast.success(`${files.length} 張圖片已排入生成佇列。`);
+      toast.success(`${files.length} image${files.length !== 1 ? "s" : ""} queued for generation.`);
       setFiles([]);
       await fetchJobs(true);
     } catch (err) {
       const msg = err instanceof Error ? err.message : undefined;
-      toast.error(toFriendlyError(msg, "上傳失敗，請稍後再試。"));
+      toast.error(toFriendlyError(msg, "Upload failed, please try again."));
     } finally {
       setUploading(false);
     }
@@ -244,7 +240,7 @@ useEffect(() => {
               Drop images here or click to browse
             </p>
             <p className="section-label mt-1 text-[#A8A29E]">
-              PNG, JPG, WebP · 最大 20MB
+              PNG, JPG, WebP · Max 20MB
             </p>
           </div>
 
@@ -284,22 +280,10 @@ useEffect(() => {
               }}
             >
               {uploading && <Loader2 className="w-4 h-4 animate-spin" />}
-              上傳 {files.length} 張圖片
+              Upload {files.length} image{files.length !== 1 ? "s" : ""}
             </button>
           )}
 
-          {/* Provider badge */}
-          {providerReady && (
-            <p className="mt-2 section-label text-[#A8A29E] text-center">
-              Provider:{" "}
-              <span
-                className="font-medium text-[#78716C]"
-                style={{ fontFamily: "var(--font-geist-mono)" }}
-              >
-                {provider}
-              </span>
-            </p>
-          )}
         </div>
 
         {/* Queue list */}
@@ -320,8 +304,8 @@ useEffect(() => {
           {jobs.length === 0 ? (
             <div className="flex flex-col items-center py-12 gap-2 text-center px-4">
               <ImageIcon className="w-8 h-8 text-[#A8A29E]" />
-              <p className="text-sm text-[#78716C]">還沒有任務</p>
-              <p className="text-xs text-[#A8A29E]">上傳圖片後會在此顯示</p>
+              <p className="text-sm text-[#78716C]">No tasks yet</p>
+              <p className="text-xs text-[#A8A29E]">Tasks will appear here after uploading</p>
             </div>
           ) : (
             <div className="px-2 pb-4 space-y-0.5">
@@ -389,7 +373,7 @@ useEffect(() => {
                   Select a task to view details
                 </p>
                 <p className="body-text text-[#78716C] mt-1">
-                  點選左側任務查看原圖、描述與標籤
+                  Select a task on the left to view the image, description, and tags
                 </p>
               </div>
             </div>
@@ -427,7 +411,7 @@ useEffect(() => {
               className="px-4 py-3 rounded-xl body-text text-[#991B1B]"
               style={{ background: "#FEE2E2", border: "1px solid rgba(153,27,27,0.12)" }}
             >
-              生成失敗：{toFriendlyError(activeJob.errorMessage ?? undefined, "請檢查 API Key 或模型設定。")}
+              Generation failed: {toFriendlyError(activeJob.errorMessage ?? undefined, "Please check your API key or model settings.")}
             </div>
           )}
 
@@ -447,8 +431,8 @@ useEffect(() => {
                 {imageDetail?.captions[0]?.content ?? (
                   <span className="text-[#A8A29E]">
                     {activeJob?.status === "QUEUED" || activeJob?.status === "PROCESSING"
-                      ? "生成中，請稍候…"
-                      : "（尚未生成）"}
+                      ? "Generating, please wait…"
+                      : "(not yet generated)"}
                   </span>
                 )}
               </p>
@@ -459,33 +443,66 @@ useEffect(() => {
             className="rounded-xl p-4"
             style={{ background: "var(--layer-card)", border: "1px solid rgba(0,0,0,0.07)" }}
           >
-            <p className="section-label mb-2 uppercase flex items-center gap-1.5">
-              <Tag className="w-3 h-3" />
-              Tags
-            </p>
+            <p className="section-label mb-3 uppercase">Structured Tags</p>
             {detailLoading ? (
-              <div className="flex gap-2 flex-wrap">
-                {[60, 80, 50, 90, 70].map((w, i) => (
-                  <div key={i} className="skeleton h-6 rounded-full" style={{ width: w }} />
+              <div className="space-y-3">
+                {[3, 2, 4].map((count, i) => (
+                  <div key={i}>
+                    <div className="skeleton h-2.5 rounded w-16 mb-1.5" />
+                    <div className="flex gap-1.5 flex-wrap">
+                      {Array.from({ length: count }).map((_, j) => (
+                        <div key={j} className="skeleton h-5 rounded-full" style={{ width: 48 + j * 12 }} />
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
-            ) : imageDetail && imageDetail.tags.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {imageDetail.tags.map((item) => (
-                  <span
-                    key={item.tag.name}
-                    className="px-3 py-1 rounded-full section-label border text-[#1C1917]"
-                    style={{ borderColor: "rgba(0,0,0,0.12)", background: "#F5F1EB" }}
-                  >
-                    {item.tag.name}
-                  </span>
-                ))}
+            ) : imageDetail?.structuredTags ? (
+              <div className="space-y-3">
+                {[
+                  { label: "Category",         values: imageDetail.structuredTags.category ? [imageDetail.structuredTags.category] : [] },
+                  { label: "Product Type",     values: imageDetail.structuredTags.product_type ? [imageDetail.structuredTags.product_type] : [] },
+                  { label: "Shape",            values: imageDetail.structuredTags.shape ? [imageDetail.structuredTags.shape] : [] },
+                  { label: "Color (Primary)",  values: imageDetail.structuredTags.color.primary },
+                  { label: "Color (Secondary)",values: imageDetail.structuredTags.color.secondary },
+                  { label: "Color (Accent)",   values: imageDetail.structuredTags.color.accent },
+                  { label: "Material",         values: imageDetail.structuredTags.material },
+                  { label: "Texture",          values: imageDetail.structuredTags.texture },
+                  { label: "Pattern",          values: imageDetail.structuredTags.pattern },
+                  { label: "Pattern Layout",   values: imageDetail.structuredTags.pattern_layout ? [imageDetail.structuredTags.pattern_layout] : [] },
+                  { label: "Technique",        values: imageDetail.structuredTags.technique },
+                  { label: "Style",            values: imageDetail.structuredTags.style },
+                  { label: "Details",          values: imageDetail.structuredTags.details },
+                  { label: "Mood",             values: imageDetail.structuredTags.mood },
+                ]
+                  .filter((row) => row.values.length > 0)
+                  .map((row) => (
+                    <div key={row.label}>
+                      <p
+                        className="mb-1"
+                        style={{ fontSize: "10px", fontWeight: 500, color: "#A8A29E", textTransform: "uppercase", letterSpacing: "0.05em" }}
+                      >
+                        {row.label}
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {row.values.map((v) => (
+                          <span
+                            key={v}
+                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                            style={{ background: "#EDE8DF", color: "#1C1917", border: "1px solid rgba(0,0,0,0.08)" }}
+                          >
+                            {v}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
               </div>
             ) : (
               <p className="body-text text-[#A8A29E]">
                 {activeJob?.status === "QUEUED" || activeJob?.status === "PROCESSING"
-                  ? "生成中…"
-                  : "（無標籤）"}
+                  ? "Generating…"
+                  : "(no structured tags)"}
               </p>
             )}
           </div>

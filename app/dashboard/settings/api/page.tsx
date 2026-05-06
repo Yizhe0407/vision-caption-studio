@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, Eye, EyeOff, Loader2, Lock, Plug, XCircle } from "lucide-react";
+import { CheckCircle2, Loader2, Lock, Plug, XCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import { toFriendlyError } from "@/src/lib/friendly-error";
 import { cn } from "@/src/lib/cn";
@@ -15,6 +15,7 @@ type SettingsResponse = {
     preferredPromptTemplateId: string | null;
     promptTemplates: Array<{ id: string; name: string; version: number }>;
     keys: Partial<Record<Provider, string>>;
+    keyStatus: Record<Provider, boolean>;
     models: Partial<Record<Provider, string>>;
   };
 };
@@ -24,36 +25,36 @@ const PROVIDERS: { id: Provider; label: string; description: string }[] = [
   {
     id: "OPENAI",
     label: "OpenAI",
-    description: "GPT-4o 及 GPT-4 Vision — 穩定、廣泛支援。",
+    description: "GPT-4o and GPT-4 Vision — stable, widely supported.",
   },
   {
     id: "GEMINI",
     label: "Gemini",
-    description: "Google Gemini Pro Vision — 強大圖像理解能力。",
+    description: "Google Gemini Pro Vision — powerful image understanding.",
   },
   {
     id: "CLAUDE",
     label: "Claude",
-    description: "Anthropic Claude 3 — 精準描述與推理能力。",
+    description: "Anthropic Claude 3 — precise description and reasoning.",
   },
   {
     id: "OPENROUTER",
     label: "OpenRouter",
-    description: "多模型閘道，支援 70+ 開放與私有模型。",
+    description: "Multi-model gateway supporting 70+ open and proprietary models.",
   },
   {
     id: "NVIDIA_NIM",
     label: "NVIDIA NIM",
-    description: "NVIDIA NIM 推理平台 — 高效能加速模型部署。",
+    description: "NVIDIA NIM inference platform — high-performance accelerated model deployment.",
   },
 ];
 
 const MODEL_PLACEHOLDERS: Record<Provider, string> = {
-  OPENAI: "例如 gpt-4.1-mini",
-  OPENROUTER: "例如 openai/gpt-4.1-mini",
-  GEMINI: "例如 gemini-2.5-flash",
-  NVIDIA_NIM: "例如 mistralai/mistral-large-3-675b-instruct-2512",
-  CLAUDE: "例如 claude-3-5-sonnet-latest",
+  OPENAI: "e.g. gpt-4.1-mini",
+  OPENROUTER: "e.g. openai/gpt-4.1-mini",
+  GEMINI: "e.g. gemini-2.5-flash",
+  NVIDIA_NIM: "e.g. mistralai/mistral-large-3-675b-instruct-2512",
+  CLAUDE: "e.g. claude-3-5-sonnet-latest",
 };
 
 function InputStyles() {
@@ -74,18 +75,17 @@ const emptyModels = (): Record<Provider, string> => ({
 export default function ApiSettingsPage() {
   const [provider, setProvider] = useState<Provider>("OPENAI");
   const [models, setModels] = useState<Record<Provider, string>>(emptyModels());
-  const [keys, setKeys] = useState<Record<Provider, string>>({
-    OPENAI: "", OPENROUTER: "", GEMINI: "", CLAUDE: "", NVIDIA_NIM: "",
+  const [keyStatus, setKeyStatus] = useState<Record<Provider, boolean>>({
+    OPENAI: false, OPENROUTER: false, GEMINI: false, CLAUDE: false, NVIDIA_NIM: false,
   });
-  const [showKey, setShowKey] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<TestResult>(null);
   const [promptTemplates, setPromptTemplates] = useState<Array<{ id: string; name: string; version: number }>>([]);
   const [preferredPromptTemplateId, setPreferredPromptTemplateId] = useState<string>("");
 
-  const currentKey = keys[provider];
   const currentModel = models[provider];
+  const isBackendKeyConfigured = keyStatus[provider];
   const providerInfo = PROVIDERS.find((p) => p.id === provider)!;
 
   /* ── Fetch ─────────────────────────────────────────── */
@@ -96,13 +96,7 @@ export default function ApiSettingsPage() {
       const data = (await res.json()) as SettingsResponse | ApiError;
       if (!data.ok) throw new Error(data.error);
       setProvider(data.settings.preferredProvider);
-      setKeys({
-        OPENAI:      data.settings.keys.OPENAI      ?? "",
-        OPENROUTER:  data.settings.keys.OPENROUTER  ?? "",
-        GEMINI:      data.settings.keys.GEMINI      ?? "",
-        CLAUDE:      data.settings.keys.CLAUDE      ?? "",
-        NVIDIA_NIM:  data.settings.keys.NVIDIA_NIM  ?? "",
-      });
+      setKeyStatus(data.settings.keyStatus);
       setModels({
         OPENAI:      data.settings.models.OPENAI      ?? "",
         OPENROUTER:  data.settings.models.OPENROUTER  ?? "",
@@ -117,14 +111,14 @@ export default function ApiSettingsPage() {
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : undefined;
-      toast.error(toFriendlyError(msg, "無法讀取 API 設定。"));
+      toast.error(toFriendlyError(msg, "Failed to load API settings."));
     }
   }
 
   useEffect(() => { void fetchSettings(); }, []); // mount only
 
   /* Clear test result on provider change */
-  useEffect(() => { setTestResult(null); setShowKey(false); }, [provider]);
+  useEffect(() => { setTestResult(null); }, [provider]);
 
   /* ── Save ──────────────────────────────────────────── */
 
@@ -136,7 +130,6 @@ export default function ApiSettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           provider,
-          apiKey: currentKey,
           preferredProvider: provider,
           preferredModel: currentModel.trim() || undefined,
           preferredPromptTemplateId: preferredPromptTemplateId || undefined,
@@ -144,11 +137,11 @@ export default function ApiSettingsPage() {
       });
       const data = (await res.json()) as { ok: boolean; error?: string };
       if (!data.ok) throw new Error(data.error);
-      toast.success("API 設定已更新。");
+      toast.success("API settings updated.");
       await fetchSettings();
     } catch (err) {
       const msg = err instanceof Error ? err.message : undefined;
-      toast.error(toFriendlyError(msg, "儲存失敗，請稍後再試。"));
+      toast.error(toFriendlyError(msg, "Save failed, please try again."));
     } finally {
       setSaving(false);
     }
@@ -157,8 +150,8 @@ export default function ApiSettingsPage() {
   /* ── Test ──────────────────────────────────────────── */
 
   async function onTest() {
-    if (!currentKey.trim()) {
-      toast.error("請先輸入 API Key。");
+    if (!isBackendKeyConfigured) {
+      toast.error("The API key for this provider is not configured. Please contact the system administrator.");
       return;
     }
     setTesting(true);
@@ -169,13 +162,12 @@ export default function ApiSettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           provider,
-          apiKey: currentKey.trim(),
           model: currentModel.trim() || undefined,
         }),
       });
       const data = (await res.json()) as { ok: boolean; error?: string };
       if (!data.ok) throw new Error(data.error ?? "Connection failed");
-      setTestResult({ status: "ok", message: "Connected — API Key valid" });
+      setTestResult({ status: "ok", message: "Backend API key and model connection successful." });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Connection failed";
       setTestResult({ status: "error", message: msg });
@@ -202,7 +194,7 @@ export default function ApiSettingsPage() {
         >
           <h2 className="section-label uppercase text-[#78716C] mb-1">AI Provider</h2>
           <p className="body-text text-[#78716C] mb-4">
-            選擇預設 Provider，後續生成任務會使用此設定。
+            Select the default provider. This setting will be used for future generation tasks.
           </p>
 
           {/* Segmented tabs */}
@@ -251,42 +243,35 @@ export default function ApiSettingsPage() {
               </p>
           </div>
 
-          {/* API Key input */}
-          <div>
-            <label className="section-label block mb-1.5 uppercase">
-              {providerInfo.label} API Key
-            </label>
-            <div className="relative">
-              <input
-                type={showKey ? "text" : "password"}
-                value={currentKey}
-                onChange={(e) =>
-                  setKeys((prev) => ({ ...prev, [provider]: e.target.value }))
-                }
-                placeholder={`輸入 ${providerInfo.label} API Key`}
-                autoComplete="off"
-                className="api-input w-full h-10 pl-3 pr-10 rounded-[10px] body-text text-[#1C1917] outline-none transition-all duration-[120ms]"
-                style={{
-                  background: "#F5F1EB",
-                  border: "1px solid rgba(0,0,0,0.12)",
-                  fontFamily: currentKey ? "var(--font-geist-mono)" : "inherit",
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowKey((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A8A29E] hover:text-[#78716C] transition-colors"
-                tabIndex={-1}
-                aria-label={showKey ? "Hide key" : "Show key"}
-              >
-                {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
+          <div
+            className={cn(
+              "flex items-start gap-2 rounded-[10px] border px-3 py-2.5 body-text",
+              isBackendKeyConfigured
+                ? "text-[#3D7A5E]"
+                : "text-[#991B1B]",
+            )}
+            style={{
+              background: isBackendKeyConfigured ? "#ECFDF3" : "#FEE2E2",
+              borderColor: isBackendKeyConfigured
+                ? "rgba(61,122,94,0.18)"
+                : "rgba(153,27,27,0.12)",
+            }}
+          >
+            {isBackendKeyConfigured ? (
+              <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            ) : (
+              <XCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            )}
+            <span>
+              {isBackendKeyConfigured
+                ? "Backend API key is configured for this provider."
+                : "Backend API key is not configured for this provider. Please ask the system administrator to update the environment variables before saving or generating."}
+            </span>
           </div>
 
           <div>
             <label className="section-label block mb-1.5 uppercase">
-              預設模型（Model）
+              Default Model
             </label>
             <input
               value={currentModel}
@@ -300,13 +285,13 @@ export default function ApiSettingsPage() {
               }}
             />
             <p className="section-label mt-1 text-[#A8A29E]">
-              未填寫時會使用系統預設模型；填寫後生成與測試都會使用你指定的模型。每個 Provider 獨立記憶。
+              Leave blank to use the system default model. When filled in, both generation and test will use the specified model. Each provider stores this independently.
             </p>
           </div>
 
           <div>
             <label className="section-label block mb-1.5 uppercase">
-              預設 Prompt Template
+              Default Prompt Template
             </label>
             <select
               value={preferredPromptTemplateId}
@@ -334,7 +319,7 @@ export default function ApiSettingsPage() {
             <button
               type="button"
               onClick={onTest}
-              disabled={testing || !currentKey.trim()}
+              disabled={testing || !isBackendKeyConfigured}
                className="h-9 px-4 rounded-[10px] body-text font-medium text-[#1C1917] flex items-center gap-2 border transition-all duration-[120ms] disabled:opacity-50 hover:bg-[#EDE8DF]"
               style={{ background: "#EDE8DF", borderColor: "rgba(0,0,0,0.07)" }}
             >
@@ -380,7 +365,7 @@ export default function ApiSettingsPage() {
 
           <p className="section-label text-[#A8A29E] flex items-center gap-1.5">
             <Lock className="w-3.5 h-3.5" />
-            API Key 加密後存入資料庫，切換 Provider 時自動帶入對應值。
+            API Key 由後端環境變數管理；此頁只儲存 Provider、模型與 Prompt Template 偏好。
           </p>
         </div>
       </div>

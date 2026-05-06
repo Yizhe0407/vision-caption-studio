@@ -1,12 +1,14 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/src/infrastructure/orm/prisma";
 
 export class CaptionRepository {
-  async create(imageId: string, aiRequestId: string, content: string) {
+  async create(imageId: string, aiRequestId: string, content: string, structuredTags?: Prisma.InputJsonValue) {
     return prisma.caption.create({
       data: {
         imageId,
         aiRequestId,
         content,
+        ...(structuredTags !== undefined ? { structuredTags } : {}),
       },
     });
   }

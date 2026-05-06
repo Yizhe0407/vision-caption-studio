@@ -25,7 +25,7 @@ export class AdminUserService {
     if (targetUser.role === "ADMIN" && role === "USER") {
       const adminCount = await this.users.countByRole("ADMIN");
       if (adminCount <= 1) {
-        throw new Error("系統至少需要保留一位管理員。");
+        throw new Error("The system must retain at least one admin.");
       }
     }
 

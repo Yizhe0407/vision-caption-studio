@@ -40,6 +40,7 @@ export class ClaudeProvider implements AIProvider {
     return {
       caption: parsed.caption,
       tags: parsed.tags,
+      structuredTags: parsed.structuredTags,
       usage: {
         inputTokens: response.usage.input_tokens,
         outputTokens: response.usage.output_tokens,

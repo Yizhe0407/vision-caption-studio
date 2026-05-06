@@ -74,7 +74,6 @@ export async function POST(req: Request) {
     const user = await requireAuthUser();
     const payload = (await req.json()) as {
       provider?: AIProviderType;
-      apiKey?: string;
       model?: string;
     };
 
@@ -83,10 +82,7 @@ export async function POST(req: Request) {
       throw new Error("Provider is required.");
     }
 
-    const apiKey =
-      payload.apiKey && payload.apiKey.trim().length > 0
-        ? payload.apiKey.trim()
-        : await container.providerCredentialService.getRequiredApiKey(user.userId, provider);
+    const apiKey = await container.providerCredentialService.getRequiredApiKey(user.userId, provider);
     const model = payload.model?.trim() || getDefaultModel(provider);
 
     await verifyApiKey(provider, apiKey, model);

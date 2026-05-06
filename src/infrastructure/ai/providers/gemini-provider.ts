@@ -24,6 +24,7 @@ export class GeminiProvider implements AIProvider {
     return {
       caption: parsed.caption,
       tags: parsed.tags,
+      structuredTags: parsed.structuredTags,
       usage: {
         inputTokens: usageMetadata?.promptTokenCount ?? 0,
         outputTokens: usageMetadata?.candidatesTokenCount ?? 0,
