@@ -35,7 +35,6 @@ export class AuthService {
         email,
         passwordHash,
         DEFAULT_TEMPLATE_CONTENT,
-        env.DEFAULT_AI_PROVIDER,
       );
     } catch (error) {
       if (
