@@ -38,7 +38,6 @@ export class ProviderCredentialService {
     userId: string,
     payload: {
       provider: AIProviderType;
-      preferredProvider: AIProviderType;
       preferredModel?: string;
       preferredPromptTemplateId?: string;
     },
@@ -55,7 +54,7 @@ export class ProviderCredentialService {
       }
     }
 
-    await this.getRequiredApiKey(userId, payload.preferredProvider);
+    await this.getRequiredApiKey(userId, payload.provider);
 
     // Save model preference per-provider on the credential row
     const modelValue = payload.preferredModel?.trim() || null;
@@ -70,7 +69,6 @@ export class ProviderCredentialService {
     }
 
     await this.users.updatePreferences(user.id, {
-      preferredProvider: payload.preferredProvider,
       preferredPromptTemplateId: payload.preferredPromptTemplateId,
     });
   }
@@ -110,7 +108,6 @@ export class ProviderCredentialService {
     );
 
     return {
-      preferredProvider: user.preferredProvider,
       preferredPromptTemplateId: user.preferredPromptTemplateId,
       promptTemplates,
       keys: {},
