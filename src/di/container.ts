@@ -60,6 +60,7 @@ class AppContainer {
     this.jobRepository,
     this.providerCredentialService,
     this.userRepository,
+    this.tagKeyService,
   );
 
   readonly authController = new AuthController(this.authService);

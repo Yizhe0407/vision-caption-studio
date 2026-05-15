@@ -10,6 +10,7 @@ import { PromptTemplateRepository } from "@/src/repositories/prompt-template.rep
 import { TagRepository } from "@/src/repositories/tag.repository";
 import { UserRepository } from "@/src/repositories/user.repository";
 import { ProviderCredentialService } from "@/src/services/provider-credential.service";
+import { TagKeyService } from "@/src/services/tag-key.service";
 import { resolveAIError } from "@/src/lib/resolve-ai-error";
 
 function estimateCostUsd(provider: AIProviderType, inputTokens: number, outputTokens: number) {
@@ -61,6 +62,7 @@ export class AIGenerationService {
     private readonly jobs: JobRepository,
     private readonly credentials: ProviderCredentialService,
     private readonly users: UserRepository,
+    private readonly tagKeyService: TagKeyService,
   ) {}
 
   async processImageJob(input: {
@@ -115,13 +117,18 @@ export class AIGenerationService {
         );
       }
 
+      const userKeys = await this.tagKeyService.getKeysForGeneration(input.userId);
+      const keyList = userKeys.join(", ");
+      const prompt = resolvedPromptTemplate.content
+        + `\n\nFor the structured_tags field in your JSON response, use exactly these keys: ${keyList}. Generate appropriate values for each key based on the image.`;
+
       const objectStream = await minioClient.getObject(image.storageBucket, image.storageObjectKey);
       const imageBuffer = await streamToBuffer(objectStream);
       const apiKey = await this.credentials.getRequiredApiKey(input.userId, provider);
       const providerClient = this.aiProviderFactory.resolve(provider, apiKey);
 
       const result = await providerClient.generateCaptionAndTags({
-        prompt: resolvedPromptTemplate.content,
+        prompt,
         mimeType: image.mimeType,
         imageBuffer,
         model,
