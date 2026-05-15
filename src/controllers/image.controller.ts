@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { env } from "@/src/lib/env";
 import { AIRequestRepository } from "@/src/repositories/ai-request.repository";
 import { minioClient } from "@/src/infrastructure/storage/minio-client";
 import { CaptionRepository } from "@/src/repositories/caption.repository";
@@ -67,7 +68,7 @@ export class ImageController {
           throw new Error("Prompt template not found.");
         }
         const request = await this.aiRequests.createManualSucceeded({
-          provider: user.preferredProvider,
+          provider: env.DEFAULT_AI_PROVIDER,
           promptTemplateId: promptTemplate.id,
         });
         await this.captions.create(parsed.id, request.id, parsed.caption.trim());
