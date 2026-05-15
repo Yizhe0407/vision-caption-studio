@@ -97,7 +97,7 @@ export class AIGenerationService {
       throw new Error("Prompt template not found.");
     }
 
-    const provider = input.provider ?? user.preferredProvider ?? env.DEFAULT_AI_PROVIDER;
+    const provider = input.provider ?? env.DEFAULT_AI_PROVIDER;
     const dbModel = await this.credentials.getProviderModel(input.userId, provider);
     const model = input.model ?? dbModel ?? getEnvModel(provider);
 
