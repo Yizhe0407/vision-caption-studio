@@ -6,7 +6,6 @@ import { JobController } from "@/src/controllers/job.controller";
 import { ImageController } from "@/src/controllers/image.controller";
 import { ProviderCredentialController } from "@/src/controllers/provider-credential.controller";
 import { PromptTemplateController } from "@/src/controllers/prompt-template.controller";
-import { TagDictionaryController } from "@/src/controllers/tag-dictionary.controller";
 import { AIRequestRepository } from "@/src/repositories/ai-request.repository";
 import { CaptionRepository } from "@/src/repositories/caption.repository";
 import { ImageRepository } from "@/src/repositories/image.repository";
@@ -15,7 +14,6 @@ import { ProviderCredentialRepository } from "@/src/repositories/provider-creden
 import { PromptTemplateRepository } from "@/src/repositories/prompt-template.repository";
 import { RefreshTokenRepository } from "@/src/repositories/refresh-token.repository";
 import { TagRepository } from "@/src/repositories/tag.repository";
-import { TagDictionaryRepository } from "@/src/repositories/tag-dictionary.repository";
 import { UserRepository } from "@/src/repositories/user.repository";
 import { AIGenerationService } from "@/src/services/ai-generation.service";
 import { AuthService } from "@/src/services/auth.service";
@@ -24,7 +22,6 @@ import { ImageService } from "@/src/services/image.service";
 import { JobService } from "@/src/services/job.service";
 import { ProviderCredentialService } from "@/src/services/provider-credential.service";
 import { PromptTemplateService } from "@/src/services/prompt-template.service";
-import { TagDictionaryService } from "@/src/services/tag-dictionary.service";
 
 class AppContainer {
   readonly userRepository = new UserRepository();
@@ -34,12 +31,10 @@ class AppContainer {
   readonly aiRequestRepository = new AIRequestRepository();
   readonly captionRepository = new CaptionRepository();
   readonly tagRepository = new TagRepository();
-  readonly tagDictionaryRepository = new TagDictionaryRepository();
   readonly jobRepository = new JobRepository();
   readonly providerCredentialRepository = new ProviderCredentialRepository();
   readonly aiProviderFactory = new AIProviderFactory();
 
-  readonly tagDictionaryService = new TagDictionaryService(this.tagDictionaryRepository);
   readonly promptTemplateService = new PromptTemplateService(this.promptTemplateRepository);
   readonly authService = new AuthService(this.userRepository, this.refreshTokenRepository);
   readonly adminUserService = new AdminUserService(this.userRepository);
@@ -77,7 +72,6 @@ class AppContainer {
   );
   readonly providerCredentialController = new ProviderCredentialController(this.providerCredentialService);
   readonly promptTemplateController = new PromptTemplateController(this.promptTemplateService);
-  readonly tagDictionaryController = new TagDictionaryController(this.tagDictionaryService);
 }
 
 export const container = new AppContainer();

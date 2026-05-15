@@ -59,7 +59,7 @@ model User {
   images                Image[]
   providerCredentials   UserProviderCredential[]
   jobs                  Job[]
-  tagDictionaryEntries  UserTagDictionaryEntry[]
+  tagKeys               UserTagKey[]
   @@index([preferredPromptTemplateId])
 }
 
@@ -190,14 +190,13 @@ model UserProviderCredential {
   @@unique([userId, provider])
 }
 
-model UserTagDictionaryEntry {
+model UserTagKey {
   id        String   @id @default(cuid())
   userId    String
-  category  String
-  value     String
+  key       String
   isDefault Boolean  @default(false)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  @@unique([userId, category, value])
-  @@index([userId, category])
+  @@unique([userId, key])
+  @@index([userId])
 }
