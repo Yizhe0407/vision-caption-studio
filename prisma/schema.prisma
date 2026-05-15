@@ -59,6 +59,7 @@ model User {
   images                Image[]
   providerCredentials   UserProviderCredential[]
   jobs                  Job[]
+  tagDictionaryEntries  UserTagDictionaryEntry[]
   @@index([preferredPromptTemplateId])
 }
 
@@ -187,4 +188,16 @@ model UserProviderCredential {
   user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, provider])
+}
+
+model UserTagDictionaryEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  category  String
+  value     String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, category, value])
+  @@index([userId, category])
 }
