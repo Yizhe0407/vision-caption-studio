@@ -11,7 +11,6 @@ type ApiError = { ok: false; error?: string };
 type SettingsResponse = {
   ok: true;
   settings: {
-    preferredProvider: Provider;
     preferredPromptTemplateId: string | null;
     promptTemplates: Array<{ id: string; name: string; version: number }>;
     keys: Partial<Record<Provider, string>>;
@@ -95,7 +94,6 @@ export default function ApiSettingsPage() {
       const res = await fetch("/api/settings/api-keys");
       const data = (await res.json()) as SettingsResponse | ApiError;
       if (!data.ok) throw new Error(data.error);
-      setProvider(data.settings.preferredProvider);
       setKeyStatus(data.settings.keyStatus);
       setModels({
         OPENAI:      data.settings.models.OPENAI      ?? "",
@@ -130,7 +128,6 @@ export default function ApiSettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           provider,
-          preferredProvider: provider,
           preferredModel: currentModel.trim() || undefined,
           preferredPromptTemplateId: preferredPromptTemplateId || undefined,
         }),
