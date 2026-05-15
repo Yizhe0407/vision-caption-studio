@@ -22,14 +22,12 @@ export async function PUT(req: Request) {
     const user = await requireAuthUser();
     const payload = (await req.json()) as {
       provider?: string;
-      preferredProvider?: string;
       preferredModel?: string;
       preferredPromptTemplateId?: string;
     };
     await container.providerCredentialController.updateSetting({
       userId: user.userId,
       provider: payload.provider,
-      preferredProvider: payload.preferredProvider,
       preferredModel: payload.preferredModel,
       preferredPromptTemplateId: payload.preferredPromptTemplateId,
     });
