@@ -1,6 +1,6 @@
 import { prisma } from "@/src/infrastructure/orm/prisma";
 import { Prisma } from "@prisma/client";
-import type { AIProviderType, UserRole } from "@prisma/client";
+import type { UserRole } from "@prisma/client";
 
 export class UserRepository {
   async findByEmail(email: string) {
@@ -47,7 +47,6 @@ export class UserRepository {
     email: string,
     passwordHash: string,
     defaultTemplateContent: string,
-    preferredProvider: AIProviderType,
   ) {
     return prisma.$transaction(
       async (tx) => {
@@ -59,7 +58,6 @@ export class UserRepository {
             email,
             passwordHash,
             role,
-            preferredProvider,
             ownedPromptTemplates: {
               create: {
                 name: "default-caption",
@@ -113,24 +111,15 @@ export class UserRepository {
     });
   }
 
-  async updatePreferredProvider(userId: string, provider: AIProviderType) {
-    return prisma.user.update({
-      where: { id: userId },
-      data: { preferredProvider: provider },
-    });
-  }
-
   async updatePreferences(
     userId: string,
     input: {
-      preferredProvider: AIProviderType;
       preferredPromptTemplateId?: string;
     },
   ) {
     return prisma.user.update({
       where: { id: userId },
       data: {
-        preferredProvider: input.preferredProvider,
         preferredPromptTemplateId: input.preferredPromptTemplateId ?? null,
       },
     });
