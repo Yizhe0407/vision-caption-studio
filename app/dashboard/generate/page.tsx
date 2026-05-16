@@ -15,20 +15,7 @@ type JobItem = {
   image: { id: string; originalFilename: string };
 };
 
-type StructuredTags = {
-  category: string;
-  product_type: string;
-  shape: string;
-  material: string[];
-  texture: string[];
-  pattern: string[];
-  pattern_layout: string;
-  technique: string[];
-  color: { primary: string[]; secondary: string[]; accent: string[] };
-  style: string[];
-  details: string[];
-  mood: string[];
-};
+type StructuredTags = Record<string, string | string[]>;
 
 type ImageDetail = {
   id: string;
@@ -41,6 +28,17 @@ type ImageDetail = {
 
 type ApiError = { ok: false; error?: string };
 
+function toStringChips(val: unknown): string[] {
+  if (typeof val === "string") return val ? [val] : [];
+  if (Array.isArray(val)) return val.flatMap(toStringChips);
+  if (val && typeof val === "object") {
+    return Object.entries(val as Record<string, unknown>).flatMap(([subKey, subVal]) =>
+      toStringChips(subVal).map((s) => `${subKey}:${s}`),
+    );
+  }
+  return [];
+}
+
 function formatTime(iso?: string) {
   if (!iso) return "";
   const d = new Date(iso);
@@ -51,45 +49,6 @@ function getFileKey(file: File) {
   return `${file.name}::${file.size}::${file.lastModified}::${file.type}`;
 }
 
-const EMPTY_STRUCTURED_TAGS: StructuredTags = {
-  category: "",
-  product_type: "",
-  shape: "",
-  material: [],
-  texture: [],
-  pattern: [],
-  pattern_layout: "",
-  technique: [],
-  color: { primary: [], secondary: [], accent: [] },
-  style: [],
-  details: [],
-  mood: [],
-};
-
-function buildTagRows(
-  draft: StructuredTags,
-  onChange: (next: StructuredTags) => void,
-): Array<{ label: string; values: string[]; onChange: (v: string[]) => void; maxItems?: number }> {
-  const set = (key: keyof StructuredTags, val: unknown) =>
-    onChange({ ...draft, [key]: val } as StructuredTags);
-
-  return [
-    { label: "Category",          values: draft.category       ? [draft.category]       : [], onChange: (v) => set("category",       v[0] ?? ""), maxItems: 1 },
-    { label: "Product Type",      values: draft.product_type   ? [draft.product_type]   : [], onChange: (v) => set("product_type",   v[0] ?? ""), maxItems: 1 },
-    { label: "Shape",             values: draft.shape          ? [draft.shape]          : [], onChange: (v) => set("shape",          v[0] ?? ""), maxItems: 1 },
-    { label: "Color (Primary)",   values: draft.color.primary,                                onChange: (v) => onChange({ ...draft, color: { ...draft.color, primary:   v } }) },
-    { label: "Color (Secondary)", values: draft.color.secondary,                              onChange: (v) => onChange({ ...draft, color: { ...draft.color, secondary: v } }) },
-    { label: "Color (Accent)",    values: draft.color.accent,                                 onChange: (v) => onChange({ ...draft, color: { ...draft.color, accent:    v } }) },
-    { label: "Material",          values: draft.material,                                     onChange: (v) => set("material",        v) },
-    { label: "Texture",           values: draft.texture,                                      onChange: (v) => set("texture",         v) },
-    { label: "Pattern",           values: draft.pattern,                                      onChange: (v) => set("pattern",         v) },
-    { label: "Pattern Layout",    values: draft.pattern_layout ? [draft.pattern_layout] : [], onChange: (v) => set("pattern_layout",  v[0] ?? ""), maxItems: 1 },
-    { label: "Technique",         values: draft.technique,                                    onChange: (v) => set("technique",       v) },
-    { label: "Style",             values: draft.style,                                        onChange: (v) => set("style",           v) },
-    { label: "Details",           values: draft.details,                                      onChange: (v) => set("details",         v) },
-    { label: "Mood",              values: draft.mood,                                         onChange: (v) => set("mood",            v) },
-  ];
-}
 
 function ChipList({
   values,
@@ -286,9 +245,7 @@ useEffect(() => {
 
   useEffect(() => {
     if (imageDetail) {
-      setStructuredTagsDraft(
-        imageDetail.structuredTags ?? { ...EMPTY_STRUCTURED_TAGS, color: { ...EMPTY_STRUCTURED_TAGS.color } },
-      );
+      setStructuredTagsDraft(imageDetail.structuredTags ?? {});
     } else {
       setStructuredTagsDraft(null);
     }
@@ -641,21 +598,32 @@ useEffect(() => {
             ) : structuredTagsDraft ? (
               <>
                 <div className="space-y-3">
-                  {buildTagRows(structuredTagsDraft, (next) => setStructuredTagsDraft(next)).map((row) => (
-                    <div key={row.label}>
-                      <p
-                        className="mb-1"
-                        style={{ fontSize: "10px", fontWeight: 500, color: "#A8A29E", textTransform: "uppercase", letterSpacing: "0.05em" }}
-                      >
-                        {row.label}
-                      </p>
-                      <ChipList
-                        values={row.values}
-                        onChange={row.onChange}
-                        maxItems={row.maxItems}
-                      />
-                    </div>
-                  ))}
+                  {Object.entries(structuredTagsDraft)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([key, val]) => {
+                      const values = toStringChips(val);
+                      const label = key
+                        .replace(/[_.]/g, " ")
+                        .replace(/\b\w/g, (c) => c.toUpperCase());
+                      return (
+                        <div key={key}>
+                          <p
+                            className="mb-1"
+                            style={{ fontSize: "10px", fontWeight: 500, color: "#A8A29E", textTransform: "uppercase", letterSpacing: "0.05em" }}
+                          >
+                            {label}
+                          </p>
+                          <ChipList
+                            values={values}
+                            onChange={(v) =>
+                              setStructuredTagsDraft((prev) =>
+                                prev ? { ...prev, [key]: v } : prev,
+                              )
+                            }
+                          />
+                        </div>
+                      );
+                    })}
                 </div>
                 <div className="mt-4 flex justify-end">
                   <button

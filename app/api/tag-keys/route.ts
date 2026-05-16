@@ -7,31 +7,25 @@ export const runtime = "nodejs";
 export async function GET() {
   try {
     const user = await requireAuthUser();
-    const settings = await container.providerCredentialController.getSettings({ userId: user.userId });
-    return NextResponse.json({ ok: true, settings });
+    const keys = await container.tagKeyController.getKeys({ userId: user.userId });
+    return NextResponse.json({ ok: true, keys });
   } catch (error) {
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : "Unknown error" },
-      { status: 401 },
+      { status: 400 },
     );
   }
 }
 
-export async function PUT(req: Request) {
+export async function POST(req: Request) {
   try {
     const user = await requireAuthUser();
-    const payload = (await req.json()) as {
-      provider?: string;
-      preferredModel?: string;
-      preferredPromptTemplateId?: string;
-    };
-    await container.providerCredentialController.updateSetting({
+    const payload = (await req.json()) as { key?: string };
+    const entry = await container.tagKeyController.addKey({
       userId: user.userId,
-      provider: payload.provider,
-      preferredModel: payload.preferredModel,
-      preferredPromptTemplateId: payload.preferredPromptTemplateId,
+      key: payload.key,
     });
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, entry });
   } catch (error) {
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : "Unknown error" },

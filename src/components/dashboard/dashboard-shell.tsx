@@ -10,6 +10,7 @@ import {
   LogOut,
   ShieldCheck,
   Sparkles,
+  Tag,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import {
@@ -44,6 +45,7 @@ function buildNavGroups(isAdmin: boolean): NavGroup[] {
     {
       label: "Configure",
       items: [
+        { href: "/dashboard/tags", label: "Tags", icon: Tag, exact: false },
         { href: "/dashboard/prompt-templates", label: "Prompt Templates", icon: FileText, exact: false },
         ...(isAdmin
           ? [{ href: "/dashboard/admin/users", label: "User Management", icon: ShieldCheck, exact: false }]
@@ -57,6 +59,7 @@ const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/dashboard/generate": "Generate",
   "/dashboard/images": "Image Library",
+  "/dashboard/tags": "Tags",
   "/dashboard/prompt-templates": "Prompt Templates",
   "/dashboard/settings/api": "API Settings",
   "/dashboard/admin/users": "User Management",

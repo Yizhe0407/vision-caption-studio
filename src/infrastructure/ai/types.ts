@@ -4,24 +4,7 @@ export type AIUsage = {
   totalTokens: number;
 };
 
-export type StructuredTags = {
-  category: string;
-  product_type: string;
-  shape: string;
-  material: string[];
-  texture: string[];
-  pattern: string[];
-  pattern_layout: string;
-  technique: string[];
-  color: {
-    primary: string[];
-    secondary: string[];
-    accent: string[];
-  };
-  style: string[];
-  details: string[];
-  mood: string[];
-};
+export type StructuredTags = Record<string, string | string[]>;
 
 export type GenerateCaptionInput = {
   prompt: string;

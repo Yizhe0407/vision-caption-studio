@@ -22,20 +22,7 @@ type JobItem = {
   };
 };
 
-type StructuredTags = {
-  category: string;
-  product_type: string;
-  shape: string;
-  material: string[];
-  texture: string[];
-  pattern: string[];
-  pattern_layout: string;
-  technique: string[];
-  color: { primary: string[]; secondary: string[]; accent: string[] };
-  style: string[];
-  details: string[];
-  mood: string[];
-};
+type StructuredTags = Record<string, string | string[]>;
 
 type ImageDetail = {
   id: string;
@@ -47,6 +34,17 @@ type ImageDetail = {
 };
 
 type ApiError = { ok: false; error?: string };
+
+function toStringChips(val: unknown): string[] {
+  if (typeof val === "string") return val ? [val] : [];
+  if (Array.isArray(val)) return val.flatMap(toStringChips);
+  if (val && typeof val === "object") {
+    return Object.entries(val as Record<string, unknown>).flatMap(([subKey, subVal]) =>
+      toStringChips(subVal).map((s) => `${subKey}:${s}`),
+    );
+  }
+  return [];
+}
 
 const FILTERS: { label: string; value: FilterTab }[] = [
   { label: "All",       value: "ALL" },
@@ -514,43 +512,36 @@ export default function ImagesPage() {
                       >
                         Structured Tags
                       </label>
-                      {[
-                        { label: "Category", values: structuredTags.category ? [structuredTags.category] : [] },
-                        { label: "Product Type", values: structuredTags.product_type ? [structuredTags.product_type] : [] },
-                        { label: "Shape", values: structuredTags.shape ? [structuredTags.shape] : [] },
-                        { label: "Color (Primary)", values: structuredTags.color.primary },
-                        { label: "Color (Secondary)", values: structuredTags.color.secondary },
-                        { label: "Color (Accent)", values: structuredTags.color.accent },
-                        { label: "Material", values: structuredTags.material },
-                        { label: "Texture", values: structuredTags.texture },
-                        { label: "Pattern", values: structuredTags.pattern },
-                        { label: "Pattern Layout", values: structuredTags.pattern_layout ? [structuredTags.pattern_layout] : [] },
-                        { label: "Technique", values: structuredTags.technique },
-                        { label: "Style", values: structuredTags.style },
-                        { label: "Details", values: structuredTags.details },
-                        { label: "Mood", values: structuredTags.mood },
-                      ]
-                        .map((row) => (
-                          <div key={row.label}>
-                            <p
-                              className="mb-1"
-                              style={{ fontSize: "10px", fontWeight: 500, color: "#A8A29E", textTransform: "uppercase", letterSpacing: "0.05em" }}
-                            >
-                              {row.label}
-                            </p>
-                            <div className="flex flex-wrap gap-1">
-                              {row.values.map((v) => (
-                                <span
-                                  key={v}
-                                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                                  style={{ background: "#EDE8DF", color: "#1C1917", border: "1px solid rgba(0,0,0,0.08)" }}
-                                >
-                                  {v}
-                                </span>
-                              ))}
+                      {Object.entries(structuredTags)
+                        .sort(([a], [b]) => a.localeCompare(b))
+                        .map(([key, val]) => {
+                          const values = toStringChips(val);
+                          if (values.length === 0) return null;
+                          const label = key
+                            .replace(/[_.]/g, " ")
+                            .replace(/\b\w/g, (c) => c.toUpperCase());
+                          return (
+                            <div key={key}>
+                              <p
+                                className="mb-1"
+                                style={{ fontSize: "10px", fontWeight: 500, color: "#A8A29E", textTransform: "uppercase", letterSpacing: "0.05em" }}
+                              >
+                                {label}
+                              </p>
+                              <div className="flex flex-wrap gap-1">
+                                {values.map((v, i) => (
+                                  <span
+                                    key={`${v}-${i}`}
+                                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                                    style={{ background: "#EDE8DF", color: "#1C1917", border: "1px solid rgba(0,0,0,0.08)" }}
+                                  >
+                                    {v}
+                                  </span>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                     </div>
                   )}
 
