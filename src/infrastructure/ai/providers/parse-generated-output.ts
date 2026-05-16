@@ -1,15 +1,19 @@
 import type { StructuredTags } from "@/src/infrastructure/ai/types";
 
-function normalizeStructuredTags(raw: unknown): StructuredTags | undefined {
+function normalizeStructuredTags(raw: unknown, prefix = ""): StructuredTags | undefined {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
   const result: StructuredTags = {};
   for (const [key, val] of Object.entries(raw as Record<string, unknown>)) {
+    const fullKey = prefix ? `${prefix}.${key}` : key;
     if (Array.isArray(val)) {
-      result[key] = val.filter((v): v is string => typeof v === "string");
+      const strings = val.filter((v): v is string => typeof v === "string");
+      if (strings.length > 0) result[fullKey] = strings;
     } else if (typeof val === "string") {
-      result[key] = val;
+      if (val) result[fullKey] = val;
+    } else if (val && typeof val === "object") {
+      const nested = normalizeStructuredTags(val, fullKey);
+      if (nested) Object.assign(result, nested);
     }
-    // skip non-string, non-array values
   }
   return Object.keys(result).length > 0 ? result : undefined;
 }

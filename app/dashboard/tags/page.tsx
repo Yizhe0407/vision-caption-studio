@@ -28,8 +28,10 @@ export default function TagsPage() {
   async function handleAdd() {
     const trimmed = input.trim();
     if (!trimmed) return;
+    const normalized = trimmed.toLowerCase().replace(/\s+/g, "_");
+    if (keys.some((k) => k.key === normalized)) return;
     setAdding(true);
-    const optimistic: TagKey = { id: `temp-${Date.now()}`, key: trimmed.toLowerCase().replace(/\s+/g, "_"), isDefault: false };
+    const optimistic: TagKey = { id: `temp-${Date.now()}`, key: normalized, isDefault: false };
     setKeys((prev) => [...prev, optimistic].sort((a, b) => a.key.localeCompare(b.key)));
     setInput("");
     try {
@@ -40,7 +42,11 @@ export default function TagsPage() {
       });
       const data = (await res.json()) as { ok: boolean; entry?: TagKey; error?: string };
       if (!data.ok) throw new Error(data.error ?? "Failed to add tag");
-      setKeys((prev) => prev.map((k) => (k.id === optimistic.id ? (data.entry ?? k) : k)));
+      setKeys((prev) => {
+        const without = prev.filter((k) => k.id !== optimistic.id);
+        if (!data.entry || without.some((k) => k.id === data.entry!.id)) return without;
+        return [...without, data.entry].sort((a, b) => a.key.localeCompare(b.key));
+      });
     } catch (err) {
       setKeys((prev) => prev.filter((k) => k.id !== optimistic.id));
       toast.error(err instanceof Error ? err.message : "Failed to add tag");

@@ -35,6 +35,17 @@ type ImageDetail = {
 
 type ApiError = { ok: false; error?: string };
 
+function toStringChips(val: unknown): string[] {
+  if (typeof val === "string") return val ? [val] : [];
+  if (Array.isArray(val)) return val.flatMap(toStringChips);
+  if (val && typeof val === "object") {
+    return Object.entries(val as Record<string, unknown>).flatMap(([subKey, subVal]) =>
+      toStringChips(subVal).map((s) => `${subKey}:${s}`),
+    );
+  }
+  return [];
+}
+
 const FILTERS: { label: string; value: FilterTab }[] = [
   { label: "All",       value: "ALL" },
   { label: "Succeeded", value: "SUCCEEDED" },
@@ -504,11 +515,7 @@ export default function ImagesPage() {
                       {Object.entries(structuredTags)
                         .sort(([a], [b]) => a.localeCompare(b))
                         .map(([key, val]) => {
-                          const values = Array.isArray(val)
-                            ? val.filter(Boolean)
-                            : val
-                            ? [val]
-                            : [];
+                          const values = toStringChips(val);
                           if (values.length === 0) return null;
                           const label = key
                             .replace(/[_.]/g, " ")
@@ -522,9 +529,9 @@ export default function ImagesPage() {
                                 {label}
                               </p>
                               <div className="flex flex-wrap gap-1">
-                                {values.map((v) => (
+                                {values.map((v, i) => (
                                   <span
-                                    key={v}
+                                    key={`${v}-${i}`}
                                     className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
                                     style={{ background: "#EDE8DF", color: "#1C1917", border: "1px solid rgba(0,0,0,0.08)" }}
                                   >

@@ -28,6 +28,17 @@ type ImageDetail = {
 
 type ApiError = { ok: false; error?: string };
 
+function toStringChips(val: unknown): string[] {
+  if (typeof val === "string") return val ? [val] : [];
+  if (Array.isArray(val)) return val.flatMap(toStringChips);
+  if (val && typeof val === "object") {
+    return Object.entries(val as Record<string, unknown>).flatMap(([subKey, subVal]) =>
+      toStringChips(subVal).map((s) => `${subKey}:${s}`),
+    );
+  }
+  return [];
+}
+
 function formatTime(iso?: string) {
   if (!iso) return "";
   const d = new Date(iso);
@@ -590,7 +601,7 @@ useEffect(() => {
                   {Object.entries(structuredTagsDraft)
                     .sort(([a], [b]) => a.localeCompare(b))
                     .map(([key, val]) => {
-                      const values = Array.isArray(val) ? val : val ? [val] : [];
+                      const values = toStringChips(val);
                       const label = key
                         .replace(/[_.]/g, " ")
                         .replace(/\b\w/g, (c) => c.toUpperCase());
