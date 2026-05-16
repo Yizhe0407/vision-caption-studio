@@ -118,9 +118,8 @@ export class AIGenerationService {
       }
 
       const userKeys = await this.tagKeyService.getKeysForGeneration(input.userId);
-      const keyList = userKeys.join(", ");
       const prompt = resolvedPromptTemplate.content
-        + `\n\nFor the tags field in your JSON response, use exactly these keys: ${keyList}. Generate appropriate values for each key based on the image.`;
+        + `\n\nRequired tag keys (use ALL of these, no others): ${userKeys.join(", ")}.\nEach value must be a string or an array of strings. Do not nest objects.`;
 
       const objectStream = await minioClient.getObject(image.storageBucket, image.storageObjectKey);
       const imageBuffer = await streamToBuffer(objectStream);

@@ -12,7 +12,8 @@ Task:
    - Shape, materials, textures, patterns, colors, and details when visible
    - Overall visual style and mood when clearly supported by the image
 
-2. Generate structured tags using the exact JSON schema below.
+2. Generate a structured tags object. Use the exact keys listed in the instruction below — no other keys.
+   Each value must be a string or an array of strings.
 
 Rules:
 - Use lowercase English values only.
@@ -20,33 +21,14 @@ Rules:
 - Only describe what is visible or strongly inferable from the image.
 - Do not invent brand names, prices, origin, gender, age group, or hidden materials.
 - If a field is unknown or not applicable, use an empty string "" for string fields and an empty array [] for array fields.
-- Do not use ambiguous bare words. Put each value into the correct semantic field.
-- Use color.primary, color.secondary, and color.accent only for physical colors.
-- Use mood only for emotional tone or atmosphere.
-- Use style only for design, fashion, or commercial visual style.
 - Keep array fields concise. Prefer 1-5 high-confidence values.
-- Return the same keys every time. Do not add, remove, or rename keys.
 
-Output JSON schema:
+Output format:
 {
   "description": "...",
   "tags": {
-    "category": "",
-    "product_type": "",
-    "shape": "",
-    "material": [],
-    "texture": [],
-    "pattern": [],
-    "pattern_layout": "",
-    "technique": [],
-    "color": {
-      "primary": [],
-      "secondary": [],
-      "accent": []
-    },
-    "style": [],
-    "details": [],
-    "mood": []
+    "<key>": "<string or array of strings>",
+    ...
   }
 }`;
 
